@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecureBank | Advanced Anti-Fraud System</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Vis.js for Network Graphing -->
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel-border: #334155; --primary: #3b82f6;
+    --primary-hover: #2563eb; --accent: #10b981; --danger: #ef4444; --text: #f8fafc;
+    --muted: #94a3b8; --font-family: 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font-family); background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px);
+    padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--panel-border); position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  header h1 span { color: var(--primary); }
+  .user-info { font-size: 0.9rem; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+  .tag { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tag.normal { background: rgba(16, 185, 129, 0.2); color: var(--accent); }
+  .tag.elevated { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+  .tag.high { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+  
+  #app { max-width: 1200px; margin: 40px auto; padding: 0 24px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px;
+    padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); }
+  .card h2 { margin-top: 0; color: var(--text); font-size: 1.25rem; font-weight: 600; margin-bottom: 20px; }
+  
+  input, select {
+    width: 100%; padding: 12px 16px; margin: 8px 0 16px; border-radius: 8px;
+    border: 1px solid var(--panel-border); background: rgba(15, 23, 42, 0.5);
+    color: var(--text); font-size: 0.95rem; font-family: var(--font-family);
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--primary); }
+  
+  button {
+    cursor: pointer; background: var(--primary); border: none; padding: 12px 24px;
+    border-radius: 8px; font-weight: 600; color: #fff; font-size: 0.95rem;
+    font-family: var(--font-family); transition: background-color 0.2s;
+  }
+  button:hover { background: var(--primary-hover); }
+  button.danger { background: var(--danger); }
+  button.danger:hover { background: #dc2626; }
+  button.secondary { background: var(--panel-border); }
+  button.secondary:hover { background: #475569; }
+  
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+  
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--panel-border); }
+  th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  
+  .flagged { color: var(--danger); font-weight: 600; }
+  .success { color: var(--accent); }
+  .failed { color: var(--danger); }
+  
+  .balance { font-size: 2.5rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .acc-no { color: var(--muted); font-size: 0.9rem; font-family: monospace; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+  .muted { color: var(--muted); font-size: 0.85rem; }
+  .hidden { display: none !important; }
+  
+  .event-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+  .sev-low { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+  .sev-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+  .sev-high { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+  .sev-critical { background: var(--danger); color: #fff; }
+  
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 10px; }
+  .tabs button { flex: 1; background: transparent; color: var(--muted); }
+  .tabs button.active { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  
+  #toast { position: fixed; bottom: 24px; right: 24px; background: #fff; color: #000; padding: 16px 24px; border-radius: 8px; font-weight: 600; display: none; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); z-index: 1000; animation: slideUp 0.3s ease-out; }
+  @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  #network-graph { width: 100%; height: 500px; border: 1px solid var(--panel-border); border-radius: 8px; background: #0b1120; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Secure<span>Bank</span></h1>
+  <div class="user-info" id="userBar"></div>
+</header>
+
+<div id="app">
+
+  <!-- AUTH VIEW -->
+  <div id="authView" class="card" style="max-width:450px; margin: 80px auto;">
+    <div class="tabs">
+      <button id="tabLogin" class="active" onclick="switchAuthTab('login')">Login</button>
+      <button id="tabRegister" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <div id="loginForm">
+      <h2>Welcome Back</h2>
+      <input id="loginUsername" placeholder="Username" class="track-typing">
+      <input id="loginPassword" type="password" placeholder="Password" class="track-typing">
+      <input id="loginDevice" placeholder="Device ID (e.g., workstation-2)">
+      <button style="width: 100%" onclick="login()">Secure Login</button>
+      <p class="muted" style="margin-top:16px; text-align:center;">Log in as <b>admin</b> to view the Threat Dashboard.</p>
+    </div>
+
+    <div id="registerForm" class="hidden">
+      <h2>Create an Account</h2>
+      <input id="regUsername" placeholder="Username">
+      <input id="regEmail" placeholder="Email Address">
+      <input id="regPassword" type="password" placeholder="Password">
+      <button style="width: 100%" onclick="register()">Create Account</button>
+      <p class="muted" style="margin-top:16px; text-align:center;">New accounts are provisioned with ₹5000 demo funds.</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashView" class="hidden">
+    
+    <!-- NORMAL USER SECTION -->
+    <div id="userSection">
+      <div class="grid">
+        <div class="card">
+          <h2>Your Account</h2>
+          <div class="balance" id="balance">₹0.00</div>
+          <div class="acc-no" id="accNo"></div>
+        </div>
+        <div class="card">
+          <h2>Transfer Funds</h2>
+          <input id="toAccount" placeholder="Recipient Account Number" class="track-typing">
+          <input id="amount" type="number" placeholder="Amount (₹)" class="track-typing">
+          <button style="width:100%" onclick="doTransfer()">Initiate Transfer</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Account Settings</h2>
+        <input id="setEmail" placeholder="Update Email">
+        <input id="setPassword" type="password" placeholder="Update Password">
+        <button class="secondary" style="width:100%" onclick="saveSettings()">Save Changes</button>
+      </div>
+
+      <div class="card">
+        <h2>Recent Transactions</h2>
+        <table>
+          <thead><tr><th>Timestamp</th><th>Sender</th><th>Recipient</th><th>Amount</th><th>Status</th><th>AI Fraud Flag</th></tr></thead>
+          <tbody id="txnTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMIN SECTION -->
+    <div id="adminSection" class="hidden">
+      <hr style="border-color: var(--panel-border); margin: 40px 0;">
+      <h2 style="color: var(--primary); margin-bottom: 24px;">Admin Threat Dashboard</h2>
+      
+      <div class="card">
+        <h2>🛡️ Anti-Fraud Network Graph</h2>
+        <p class="muted">Visualize money flow to detect cyclical patterns and Money Mule rings.</p>
+        <button class="secondary" style="margin-bottom: 16px;" onclick="loadAdmin()">Refresh Graph</button>
+        <div id="network-graph"></div>
+      </div>
+
+      <div class="card">
+        <h2>Simulate Security Telemetry (Judge Demo)</h2>
+        <p class="muted" style="margin-bottom: 16px;">Fire a simulated security event. A real ML model would correlate this with transactions.</p>
+        <div style="display: flex; gap: 12px;">
+            <select id="eventType" style="flex: 1; margin: 0;">
+                <option value="new_device_login">New Device Login</option>
+                <option value="impossible_travel">Impossible Travel Anomaly</option>
+                <option value="malware_detected">Malware Signature Detected</option>
+                <option value="device_compromised">Endpoint Compromised (C2)</option>
+                <option value="brute_force_attempt">Brute Force Login</option>
+                <option value="vpn_anomaly">VPN / Proxy Exit Node</option>
+            </select>
+            <button class="danger" onclick="simulateEvent()" style="margin: 0;">Inject Threat Intel</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Global Threat Intelligence Logs</h2>
+        <table>
+          <thead><tr><th>Timestamp</th><th>Event Type</th><th>Severity</th><th>Device ID</th><th>Context/Details</th></tr></thead>
+          <tbody id="eventTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="text-align: right; margin-bottom: 40px;">
+      <button class="danger" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+let CURRENT_USER = null;
+
+// --- Behavioral Telemetry System ---
+let mouseMovements = [];
+let typingMetrics = { start: null, count: 0 };
+
+document.addEventListener('mousemove', (e) => {
+    if(mouseMovements.length < 50) {
+        mouseMovements.push({x: e.clientX, y: e.clientY, t: Date.now()});
+    }
+});
+
+document.querySelectorAll('.track-typing').forEach(el => {
+    el.addEventListener('input', () => {
+        if(!typingMetrics.start) typingMetrics.start = Date.now();
+        typingMetrics.count++;
+    });
+});
+
+async function sendBehavioralTelemetry() {
+    if(!CURRENT_USER) return;
+    let wpm = 0;
+    if(typingMetrics.start && typingMetrics.count > 0) {
+        let minutes = (Date.now() - typingMetrics.start) / 60000;
+        wpm = (typingMetrics.count / 5) / (minutes || 1);
+    }
+    
+    const payload = { mouse_movements: mouseMovements, typing_speed_wpm: wpm };
+
+    try {
+        await fetch('/api/telemetry/behavior', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+    } catch(e) { console.error("Telemetry error", e); }
+
+    mouseMovements = [];
+    typingMetrics = { start: null, count: 0 };
+}
+
+setInterval(sendBehavioralTelemetry, 10000);
+// ------------------------------------
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(()=> t.style.display='none', 4000);
+}
+
+function switchAuthTab(tab){
+  document.getElementById('loginForm').classList.toggle('hidden', tab!=='login');
+  document.getElementById('registerForm').classList.toggle('hidden', tab!=='register');
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active', tab==='register');
+}
+
+async function api(path, method='GET', body=null){
+  const opts = {method, headers:{'Content-Type':'application/json'}};
+  if(body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){ throw new Error(data.error || 'Request failed'); }
+  return data;
+}
+
+async function register(){
+  try{
+    const r = await api('/api/register','POST',{
+      username: document.getElementById('regUsername').value,
+      email: document.getElementById('regEmail').value,
+      password: document.getElementById('regPassword').value
+    });
+    toast('Registration successful. Account Number: ' + r.account_number);
+    switchAuthTab('login');
+  }catch(e){ toast('Error: '+e.message); }
+}
+
+async function login(){
+  try{
+    const r = await api('/api/login','POST',{
+      username: document.getElementById('loginUsername').value,
+      password: document.getElementById('loginPassword').value,
+      device_id: document.getElementById('loginDevice').value || 'workstation-1'
+    });
+    toast('Authentication successful. Welcome, '+r.username);
+    showDashboard();
+    sendBehavioralTelemetry();
+  }catch(e){ toast('Login failed: '+e.message); }
+}
+
+async function logout(){
+  await api('/api/logout','POST');
+  CURRENT_USER = null;
+  document.getElementById('authView').classList.remove('hidden');
+  document.getElementById('dashView').classList.add('hidden');
+  document.getElementById('userBar').innerHTML = '';
+}
+
+async function showDashboard(){
+  document.getElementById('authView').classList.add('hidden');
+  document.getElementById('dashView').classList.remove('hidden');
+  await refreshAll();
+  
+  if (CURRENT_USER && CURRENT_USER.username.toLowerCase() === 'admin') {
+      document.getElementById('adminSection').classList.remove('hidden');
+      await loadAdmin();
+      await fetchGlobalEvents();
+  } else {
+      document.getElementById('adminSection').classList.add('hidden');
+  }
+}
+
+async function refreshAll(){
+  const me = await api('/api/me');
+  CURRENT_USER = me;
+  
+  let riskBadge = '';
+  if (me.username.toLowerCase() !== 'admin') {
+      riskBadge = `<span class="tag ${me.risk_level}">${me.risk_level} RISK</span>`;
+  }
+  document.getElementById('userBar').innerHTML = `<strong>${me.username}</strong> ${riskBadge}`;
+  
+  if(me.accounts && me.accounts.length > 0) {
+      const acc = me.accounts[0];
+      document.getElementById('balance').textContent = '₹' + acc.balance.toLocaleString('en-IN', {minimumFractionDigits: 2});
+      document.getElementById('accNo').textContent = acc.account_number;
+  }
+
+  const txns = await api('/api/transactions');
+  document.getElementById('txnTable').innerHTML = txns.map(t => `
+    <tr>
+      <td>${new Date(t.timestamp).toLocaleString()}</td>
+      <td style="font-family:monospace">${t.from_account}</td>
+      <td style="font-family:monospace">${t.to_account}</td>
+      <td style="font-weight:600">₹${t.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+      <td class="${t.status}">${t.status.toUpperCase()}</td>
+      <td>${t.flagged ? `<span class="flagged">🚨 ${t.flag_reason || 'AI Flag'}</span>` : '<span class="muted">Clean</span>'}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="muted">No transaction history</td></tr>';
+}
+
+async function fetchGlobalEvents() {
+    // In a real app, admin gets global events, but for demo we reuse /api/security/events 
+    // or /api/admin/overview. /api/admin/overview gives recent_events globally.
+    try {
+        const r = await api('/api/admin/overview');
+        document.getElementById('eventTable').innerHTML = r.recent_events.map(ev => `
+            <tr>
+            <td>${new Date(ev.timestamp).toLocaleString()}</td>
+            <td style="font-weight:600">${ev.event_type.replace(/_/g, ' ').toUpperCase()}</td>
+            <td><span class="event-badge sev-${ev.severity}">${ev.severity}</span></td>
+            <td style="font-family:monospace">${ev.device_id || '—'}</td>
+            <td class="muted">${ev.details} <br><small>User: ${ev.username}</small></td>
+            </tr>`).join('') || '<tr><td colspan="5" class="muted">No threat intel events logged</td></tr>';
+    } catch(e) {}
+}
+
+async function doTransfer(){
+  sendBehavioralTelemetry();
+  try{
+    const r = await api('/api/transfer','POST',{
+      to_account: document.getElementById('toAccount').value,
+      amount: parseFloat(document.getElementById('amount').value)
+    });
+    toast(r.flagged ? '🚨 Transfer Blocked/Flagged by AI: '+r.flag_reason : 'Transfer processed successfully');
+    await refreshAll();
+    if(CURRENT_USER.username.toLowerCase() === 'admin') await loadAdmin();
+  }catch(e){ toast('Transfer failed: '+e.message); }
+}
+
+async function simulateEvent(){
+  try{
+    const type = document.getElementById('eventType').value;
+    const r = await api('/api/security/simulate','POST',{event_type:type, device_id:'suspicious-workstation'});
+    toast('Threat Intel Injected: '+r.message);
+    await fetchGlobalEvents();
+  }catch(e){ toast('Error: '+e.message); }
+}
+
+async function saveSettings(){
+  try{
+    await api('/api/settings','POST',{
+      email: document.getElementById('setEmail').value,
+      password: document.getElementById('setPassword').value
+    });
+    toast('Security settings updated successfully');
+  }catch(e){ toast('Error: '+e.message); }
+}
+
+let networkGraph = null;
+async function loadAdmin(){
+  try{
+    const r = await api('/api/admin/overview');
+    
+    // Render Network Graph
+    if(r.graph_data) {
+        const container = document.getElementById('network-graph');
+        const data = {
+            nodes: new vis.DataSet(r.graph_data.nodes.map(n => ({...n, shape: 'dot', size: 20, color: '#3b82f6', font: {color: '#f8fafc'}}))),
+            edges: new vis.DataSet(r.graph_data.edges.map(e => ({...e, arrows: 'to', color: '#94a3b8'})))
+        };
+        const options = {
+            physics: { stabilization: false, barnesHut: { springLength: 200 } },
+            interaction: { hover: true, tooltipDelay: 200 }
+        };
+        
+        if(!networkGraph) {
+            networkGraph = new vis.Network(container, data, options);
+        } else {
+            networkGraph.setData(data);
+        }
+    }
+  }catch(e){ console.log('Admin load error', e); }
+}
+
+// Auto-load if authenticated
+(async ()=>{
+  try{
+    await api('/api/me');
+    await showDashboard();
+  }catch(e){ /* Stay on login */ }
+})();
+</script>
+
+</body>
+</html>
