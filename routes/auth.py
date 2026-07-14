@@ -39,9 +39,13 @@ def register():
 
     pw_hash = generate_password_hash(password)
     now = datetime.utcnow().isoformat()
+    # Mock some realistic coordinates for India or anywhere (using random around India)
+    home_lat = 20.0 + random.uniform(-5.0, 5.0)
+    home_lon = 78.0 + random.uniform(-5.0, 5.0)
+    
     cur = db.execute(
-        "INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-        (username, email, pw_hash, now),
+        "INSERT INTO users (username, email, password_hash, created_at, home_lat, home_lon, failed_login_attempts, device_risk_score) VALUES (?, ?, ?, ?, ?, ?, 0, 0.0)",
+        (username, email, pw_hash, now, home_lat, home_lon),
     )
     user_id = cur.lastrowid
 
@@ -70,20 +74,28 @@ def login():
     if not user or not check_password_hash(user["password_hash"], password):
         from routes.telemetry import _log_security_event
         if user:
+            # Increment failed attempts
+            db.execute("UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?", (user["id"],))
             _log_security_event(db, user["id"], "brute_force_attempt", device_id, ip_address,
                                  "Failed login attempt with incorrect password.")
             db.commit()
         return jsonify({"error": "invalid username or password"}), 401
+
+    # Successful login, reset failed attempts
+    db.execute("UPDATE users SET failed_login_attempts = 0 WHERE id = ?", (user["id"],))
 
     # Has this device_id been seen before for this user?
     seen = db.execute(
         "SELECT 1 FROM security_events WHERE user_id = ? AND device_id = ? LIMIT 1",
         (user["id"], device_id),
     ).fetchone()
+    
     if not seen:
         from routes.telemetry import _log_security_event
         _log_security_event(db, user["id"], "new_device_login", device_id, ip_address,
                              f"First-time login from device '{device_id}'.")
+        # Increase device risk score slightly for new devices
+        db.execute("UPDATE users SET device_risk_score = device_risk_score + 10.0 WHERE id = ?", (user["id"],))
 
     session["user_id"] = user["id"]
     db.commit()

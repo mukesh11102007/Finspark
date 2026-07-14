@@ -60,13 +60,95 @@ def transfer():
     txn_id = cur.lastrowid
     db.commit()
 
-    # NOTE: Correlation logic removed for ML integration
+    # ML Model Integration
+    flagged = False
+    flag_reason = None
+    
+    import joblib
+    import os
+    import pandas as pd
+    import math
+    
+    def haversine(lat1, lon1, lat2, lon2):
+        R = 6371 # km
+        dlat = math.radians(lat2-lat1)
+        dlon = math.radians(lon2-lon1)
+        a = math.sin(dlat/2)*math.sin(dlat/2) + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(dlon/2)*math.sin(dlon/2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        return R * c
+
+    model_path = "fraud_model.joblib"
+    features_path = "model_features.joblib"
+    
+    if os.path.exists(model_path) and os.path.exists(features_path):
+        fraud_model = joblib.load(model_path)
+        model_features = joblib.load(features_path)
+        
+        # Calculate real DB features
+        user_dict = dict(user)
+        created_at = datetime.fromisoformat(user_dict.get("created_at") or datetime.utcnow().isoformat())
+        account_age_days = max(0, (datetime.utcnow() - created_at).days)
+        
+        home_lat = user_dict.get("home_lat") or 20.0
+        home_lon = user_dict.get("home_lon") or 78.0
+        
+        # Check for VPN/Impossible travel to simulate geo distance
+        last_event = db.execute("SELECT event_type FROM security_events WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1", (user["id"],)).fetchone()
+        if last_event and last_event["event_type"] in ["vpn_anomaly", "impossible_travel"]:
+            txn_lat, txn_lon = home_lat + 20.0, home_lon + 20.0 # Far away
+        else:
+            txn_lat, txn_lon = home_lat + 0.01, home_lon + 0.01 # Close by
+            
+        geo_dist = haversine(home_lat, home_lon, txn_lat, txn_lon)
+        
+        # Behavioral telemetry
+        recent_anomaly = db.execute("SELECT 1 FROM security_events WHERE user_id = ? AND event_type='behavioral_anomaly' ORDER BY timestamp DESC LIMIT 1", (user["id"],)).fetchone()
+        if recent_anomaly:
+            mouse_dist, typing_wpm, mouse_speed = 100.0, 600.0, 30.0 # Bot
+        else:
+            mouse_dist, typing_wpm, mouse_speed = 2000.0, 60.0, 2.0  # Human
+            
+        # Construct feature dict matching Kaggle dataset + Behavioral
+        feature_dict = {
+            "transaction_amount": amount,
+            "login_attempts": user_dict.get("failed_login_attempts") or 0,
+            "device_risk_score": user_dict.get("device_risk_score") or 0.0,
+            "transfer_frequency": 5, # Baseline
+            "anomaly_score": 0.1, # Baseline
+            "account_age_days": account_age_days,
+            "transaction_time_hour": datetime.utcnow().hour,
+            "failed_transactions_last_30d": 0,
+            "avg_monthly_balance": float(from_acc["balance"]),
+            "daily_transaction_count": 1,
+            "geo_distance_km": geo_dist,
+            "session_duration_minutes": 5,
+            "transaction_velocity_score": 10.0,
+            "payment_channel": 1, # Label encoded Web Banking
+            "authentication_type": 1, # Label encoded OTP
+            "card_present_flag": 0,
+            "international_transaction_flag": 1 if geo_dist > 1000 else 0,
+            "suspicious_ip_flag": 1 if last_event and last_event["event_type"] == "vpn_anomaly" else 0,
+            "typing_wpm": typing_wpm,
+            "mouse_distance_total": mouse_dist,
+            "mouse_speed_avg": mouse_speed
+        }
+        
+        # Ensure exact column order
+        input_df = pd.DataFrame([feature_dict])[model_features]
+        
+        fraud_prob = fraud_model.predict_proba(input_df)[0][1]
+        
+        if fraud_prob > 0.60:
+            flagged = True
+            flag_reason = f"AI blocked transfer (Kaggle+Telemetry). Fraud Prob: {fraud_prob*100:.1f}% | GeoDist: {geo_dist:.0f}km | Age: {account_age_days}d"
+            db.execute("UPDATE transactions SET flagged=1, ai_fraud_score=?, flag_reason=? WHERE id=?", (fraud_prob, flag_reason, txn_id))
+            db.commit()
 
     return jsonify({
         "message": "transfer complete",
         "transaction_id": txn_id,
-        "flagged": False,
-        "flag_reason": None,
+        "flagged": flagged,
+        "flag_reason": flag_reason,
     })
 
 

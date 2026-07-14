@@ -22,9 +22,13 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
-            email TEXT,
+            email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            home_lat REAL,
+            home_lon REAL,
+            failed_login_attempts INTEGER DEFAULT 0,
+            device_risk_score REAL DEFAULT 0.0,
             risk_level TEXT DEFAULT 'normal'
         );
 
@@ -69,8 +73,8 @@ def init_db():
     if not admin:
         now = datetime.utcnow().isoformat()
         db.execute(
-            "INSERT INTO users (username, password_hash, created_at, risk_level) VALUES (?, ?, ?, ?)",
-            ("admin", generate_password_hash("pass"), now, "admin")
+            "INSERT INTO users (username, email, password_hash, created_at, risk_level) VALUES (?, ?, ?, ?, ?)",
+            ("admin", "admin@securebank.com", generate_password_hash("pass"), now, "admin")
         )
 
     db.commit()

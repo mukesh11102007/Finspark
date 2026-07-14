@@ -657,7 +657,7 @@ async function showDashboard(){
       if(me.accounts && me.accounts.length > 0) {
           const acc = me.accounts[0];
           document.getElementById('balance').textContent = '₹' + acc.balance.toLocaleString('en-IN', {minimumFractionDigits: 2});
-          document.getElementById('accNoHeader').textContent = acc.account_number.substr(-4);
+          document.getElementById('accNoHeader').textContent = acc.account_number;
       }
       await refreshTransactions(me);
   }
@@ -702,7 +702,7 @@ async function refreshAll(){
   if(me.accounts && me.accounts.length > 0) {
       const acc = me.accounts[0];
       document.getElementById('balance').textContent = '₹' + acc.balance.toLocaleString('en-IN', {minimumFractionDigits: 2});
-      document.getElementById('accNoHeader').textContent = acc.account_number.substr(-4); // show last 4
+      document.getElementById('accNoHeader').textContent = acc.account_number;
   }
 
   const txns = await api('/api/transactions');
