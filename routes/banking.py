@@ -2,8 +2,46 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime
 from database import get_db
 from routes.auth import require_login
+import requests
+import json
 
 banking_bp = Blueprint("banking", __name__)
+
+def generate_ai_explanation(reason_details):
+    prompt = (
+        f"Explain to a banking user in one short, professional, and friendly sentence "
+        f"why their transaction was blocked or flagged. Reason: {reason_details}. "
+        f"Do not include any greeting, JSON, or meta-commentary, just the sentence itself."
+    )
+    
+    # Try local Ollama with installed gemma3:4b first, then other tags as fallback
+    models = ["gemma3:4b", "gemma:2b", "gemma:latest", "llama3"]
+    for model in models:
+        try:
+            r = requests.post(
+                "http://localhost:11434/api/generate",
+                json={"model": model, "prompt": prompt, "stream": False},
+                timeout=3.0
+            )
+            if r.status_code == 200:
+                explanation = r.json().get("response", "").strip()
+                if explanation:
+                    return explanation
+        except Exception:
+            continue
+            
+    # Rule-based fallback if Ollama is unavailable
+    reason_lower = reason_details.lower()
+    if "insufficient funds" in reason_lower:
+        return "The transfer could not be completed because your account balance is insufficient for this amount."
+    elif "sender" in reason_lower:
+        return "As a precaution, this transaction was blocked because your account currently has active security alerts."
+    elif "receiver" in reason_lower:
+        return "This transfer was flagged because the recipient's account has elevated security and risk indicators."
+    elif "fraud" in reason_lower or "ai blocked" in reason_lower:
+        return "Our security system flagged this transaction due to patterns resembling unauthorized transfer activity."
+    else:
+        return f"This transaction was flagged due to security policy guidelines: {reason_details}"
 
 @banking_bp.route("/api/accounts", methods=["GET"])
 def accounts():
@@ -40,29 +78,29 @@ def transfer():
     if not to_acc:
         return jsonify({"error": "recipient account not found"}), 404
 
+    # Fetch receiver details
+    receiver = db.execute("SELECT * FROM users WHERE id = ?", (to_acc["user_id"],)).fetchone()
+
+    # Check threat status of sender and receiver
+    sender_threat = user["risk_level"] in ("elevated", "high", "critical")
+    receiver_threat = receiver and receiver["risk_level"] in ("elevated", "high", "critical")
+
     now = datetime.utcnow().isoformat()
 
     if from_acc["balance"] < amount:
+        reason = "Insufficient funds to complete the transfer."
+        ai_exp = generate_ai_explanation(reason)
         db.execute(
-            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status) VALUES (?, ?, ?, ?, ?)",
-            (from_acc["account_number"], to_account, amount, now, "failed"),
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, flag_reason) VALUES (?, ?, ?, ?, ?, 1, ?)",
+            (from_acc["account_number"], to_account, amount, now, "failed", ai_exp),
         )
         db.commit()
-        return jsonify({"error": "insufficient funds"}), 400
-
-    # perform transfer
-    db.execute("UPDATE accounts SET balance = balance - ? WHERE id = ?", (amount, from_acc["id"]))
-    db.execute("UPDATE accounts SET balance = balance + ? WHERE id = ?", (amount, to_acc["id"]))
-    cur = db.execute(
-        "INSERT INTO transactions (from_account, to_account, amount, timestamp, status) VALUES (?, ?, ?, ?, ?)",
-        (from_acc["account_number"], to_account, amount, now, "success"),
-    )
-    txn_id = cur.lastrowid
-    db.commit()
+        return jsonify({"error": "insufficient funds", "reason": ai_exp}), 400
 
     # ML Model Integration
     flagged = False
     flag_reason = None
+    fraud_prob = 0.0
     
     import joblib
     import os
@@ -108,13 +146,22 @@ def transfer():
         else:
             mouse_dist, typing_wpm, mouse_speed = 2000.0, 60.0, 2.0  # Human
             
+        # Adjust features based on threat level of sender and receiver
+        login_attempts = user_dict.get("failed_login_attempts") or 0
+        device_risk_score = user_dict.get("device_risk_score") or 0.0
+        if sender_threat:
+            device_risk_score += 50.0
+            login_attempts += 5
+        if receiver_threat:
+            device_risk_score += 30.0
+
         # Construct feature dict matching Kaggle dataset + Behavioral
         feature_dict = {
             "transaction_amount": amount,
-            "login_attempts": user_dict.get("failed_login_attempts") or 0,
-            "device_risk_score": user_dict.get("device_risk_score") or 0.0,
-            "transfer_frequency": 5, # Baseline
-            "anomaly_score": 0.1, # Baseline
+            "login_attempts": login_attempts,
+            "device_risk_score": device_risk_score,
+            "transfer_frequency": 10 if (sender_threat or receiver_threat) else 5,
+            "anomaly_score": 0.8 if (sender_threat or receiver_threat) else 0.1,
             "account_age_days": account_age_days,
             "transaction_time_hour": datetime.utcnow().hour,
             "failed_transactions_last_30d": 0,
@@ -138,18 +185,53 @@ def transfer():
         
         fraud_prob = fraud_model.predict_proba(input_df)[0][1]
         
-        if fraud_prob > 0.60:
-            flagged = True
-            flag_reason = f"AI blocked transfer (Kaggle+Telemetry). Fraud Prob: {fraud_prob*100:.1f}% | GeoDist: {geo_dist:.0f}km | Age: {account_age_days}d"
-            db.execute("UPDATE transactions SET flagged=1, ai_fraud_score=?, flag_reason=? WHERE id=?", (fraud_prob, flag_reason, txn_id))
-            db.commit()
+    # Flag if fraud_prob > 0.60, or if either sender or receiver is under active threat
+    if fraud_prob > 0.60 or sender_threat or receiver_threat:
+        flagged = True
+        
+        # Determine explanation context
+        if sender_threat:
+            core_reason = f"the sender has active security threats (risk level: {user['risk_level']})"
+        elif receiver_threat:
+            core_reason = f"the recipient's account has high risk indicators (risk level: {receiver['risk_level']})"
+        else:
+            core_reason = f"the anti-fraud model detected suspicious transaction patterns resembling ML fraud score of {fraud_prob*100:.1f}%"
+            
+        # Generate AI explanation
+        ai_exp = generate_ai_explanation(core_reason)
+        flag_reason = f"AI Blocked: {ai_exp}"
+        
+        # Insert flagged/blocked transaction as FAILED (amount NOT deducted)
+        cur = db.execute(
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, flag_reason, ai_fraud_score) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
+            (from_acc["account_number"], to_account, amount, now, "failed", flag_reason, fraud_prob),
+        )
+        txn_id = cur.lastrowid
+        db.commit()
+        
+        return jsonify({
+            "error": flag_reason,
+            "flagged": True,
+            "flag_reason": flag_reason,
+            "transaction_id": txn_id
+        }), 400
+    else:
+        # Perform actual balance transfer ONLY if the transaction passed security checks
+        db.execute("UPDATE accounts SET balance = balance - ? WHERE id = ?", (amount, from_acc["id"]))
+        db.execute("UPDATE accounts SET balance = balance + ? WHERE id = ?", (amount, to_acc["id"]))
+        cur = db.execute(
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, ai_fraud_score) VALUES (?, ?, ?, ?, ?, 0, ?)",
+            (from_acc["account_number"], to_account, amount, now, "success", fraud_prob),
+        )
+        txn_id = cur.lastrowid
+        db.commit()
 
-    return jsonify({
-        "message": "transfer complete",
-        "transaction_id": txn_id,
-        "flagged": flagged,
-        "flag_reason": flag_reason,
-    })
+        return jsonify({
+            "message": "transfer complete",
+            "transaction_id": txn_id,
+            "flagged": False,
+            "flag_reason": None,
+        })
 
 
 @banking_bp.route("/api/transactions", methods=["GET"])
@@ -174,7 +256,8 @@ def admin_overview():
         "SELECT * FROM transactions WHERE flagged = 1 ORDER BY timestamp DESC"
     ).fetchall()
     recent_events = db.execute(
-        "SELECT se.*, u.username FROM security_events se JOIN users u ON u.id = se.user_id "
+        "SELECT se.*, COALESCE(u.username, 'Non-existent / Unknown User') as username "
+        "FROM security_events se LEFT JOIN users u ON u.id = se.user_id "
         "ORDER BY se.timestamp DESC LIMIT 25"
     ).fetchall()
     
@@ -191,3 +274,22 @@ def admin_overview():
         "recent_events": [dict(e) for e in recent_events],
         "graph_data": {"nodes": nodes, "edges": edges}
     })
+
+@banking_bp.route("/api/admin/reset", methods=["POST"])
+def admin_reset():
+    user = require_login()
+    if not user or user["risk_level"] != "admin":
+        return jsonify({"error": "unauthorized"}), 403
+        
+    db = get_db()
+    # Delete all transactions
+    db.execute("DELETE FROM transactions")
+    # Delete all security events
+    db.execute("DELETE FROM security_events")
+    # Reset user balances to 5000
+    db.execute("UPDATE accounts SET balance = 5000.0")
+    # Reset user risk metrics
+    db.execute("UPDATE users SET failed_login_attempts = 0, device_risk_score = 0.0, risk_level = 'normal' WHERE username != 'admin'")
+    db.commit()
+    
+    return jsonify({"message": "All records cleared and demo reset successfully."})

@@ -78,7 +78,11 @@ def login():
             db.execute("UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?", (user["id"],))
             _log_security_event(db, user["id"], "brute_force_attempt", device_id, ip_address,
                                  "Failed login attempt with incorrect password.")
-            db.commit()
+        else:
+            # Log failure for non-existent user under dummy user_id 0
+            _log_security_event(db, 0, "brute_force_attempt", device_id, ip_address,
+                                 f"Failed login attempt for non-existent user '{username}'.")
+        db.commit()
         return jsonify({"error": "invalid username or password"}), 401
 
     # Successful login, reset failed attempts

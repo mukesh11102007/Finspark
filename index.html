@@ -219,11 +219,22 @@
   .risk-elevated { background: rgba(245,158,11,0.1); color: #d97706; padding: 3px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
   .risk-high { background: rgba(239,68,68,0.15); color: #ef4444; padding: 3px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
   .risk-admin { background: rgba(99,102,241,0.1); color: #6366f1; padding: 3px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 </style>
 </head>
 <body>
 
 <div id="appWrapper" class="mobile-container">
+  
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 3000;">
+    <div style="width: 50px; height: 50px; border: 5px solid #E5E7EB; border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
+    <div style="font-family: 'Outfit', sans-serif; font-weight: 600; color: var(--text-primary); font-size: 16px;">Processing Transaction...</div>
+    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center; padding: 0 40px; line-height: 1.4;">Evaluating AI threat signals and machine learning fraud score...</div>
+  </div>
   
   <!-- AUTH VIEW -->
   <div id="authView" class="app-content" style="display: flex; flex-direction: column; justify-content: center;">
@@ -344,6 +355,7 @@
     <div style="display: flex; align-items: center; gap: 16px;">
       <span style="font-size: 13px; opacity: 0.7;">Logged in as <b>admin</b></span>
       <button class="btn" style="background: rgba(255,255,255,0.1); color: white; width: auto; padding: 8px 16px; font-size: 13px;" onclick="loadAdmin(); fetchGlobalEvents();">↻ Refresh</button>
+      <button class="btn" style="background: #e11d48; color: white; width: auto; padding: 8px 16px; font-size: 13px; font-weight: 600;" onclick="resetDemo()">🗑️ Reset Demo</button>
       <button class="btn" style="background: #ef4444; color: white; width: auto; padding: 8px 16px; font-size: 13px;" onclick="logout()">Sign Out</button>
     </div>
   </div>
@@ -381,6 +393,13 @@
         <p class="muted" style="margin-bottom: 16px; font-size: 13px;">Fire a simulated security event. A real ML model would correlate this with transactions.</p>
         <div class="flex-col" style="gap: 12px;">
           <div>
+            <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Target User</label>
+            <select id="targetUserIdCard" style="margin: 6px 0 0; padding: 12px;">
+              <option value="">-- Select User --</option>
+              <option value="0">Unknown / Dummy User</option>
+            </select>
+          </div>
+          <div>
             <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Event Type</label>
             <select id="eventType" style="margin: 6px 0 0; padding: 12px;">
                 <option value="new_device_login">New Device Login</option>
@@ -391,7 +410,7 @@
                 <option value="vpn_anomaly">VPN / Proxy Exit Node</option>
             </select>
           </div>
-          <button class="btn" style="background: #ef4444; color: white;" onclick="simulateEvent()">🚨 Inject Threat Intel</button>
+          <button class="btn" style="background: #ef4444; color: white;" onclick="simulateEvent(false)">🚨 Inject Threat Intel</button>
         </div>
       </div>
     </div>
@@ -474,15 +493,25 @@
     </div>
     <p class="muted" style="margin-bottom: 16px;">Fire a simulated security event to test correlation engine.</p>
     <div class="flex-col">
-      <select id="eventType">
-          <option value="new_device_login">New Device Login</option>
-          <option value="impossible_travel">Impossible Travel Anomaly</option>
-          <option value="malware_detected">Malware Signature Detected</option>
-          <option value="device_compromised">Endpoint Compromised (C2)</option>
-          <option value="brute_force_attempt">Brute Force Login</option>
-          <option value="vpn_anomaly">VPN / Proxy Exit Node</option>
-      </select>
-      <button class="btn" style="background: var(--danger-color); color: white;" onclick="simulateEvent()">Simulate Attack</button>
+      <div>
+        <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Target User</label>
+        <select id="targetUserIdSheet" style="margin: 6px 0 0; padding: 12px;">
+          <option value="">-- Select User --</option>
+          <option value="0">Unknown / Dummy User</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Event Type</label>
+        <select id="eventTypeSheet">
+            <option value="new_device_login">New Device Login</option>
+            <option value="impossible_travel">Impossible Travel Anomaly</option>
+            <option value="malware_detected">Malware Signature Detected</option>
+            <option value="device_compromised">Endpoint Compromised (C2)</option>
+            <option value="brute_force_attempt">Brute Force Login</option>
+            <option value="vpn_anomaly">VPN / Proxy Exit Node</option>
+        </select>
+      </div>
+      <button class="btn" style="background: var(--danger-color); color: white;" onclick="simulateEvent(true)">Simulate Attack</button>
     </div>
   </div>
 
@@ -663,31 +692,50 @@ async function showDashboard(){
   }
 }
 
-async function refreshTransactions(me){
-  const txns = await api('/api/transactions');
-  document.getElementById('txnList').innerHTML = txns.map(t => {
-    const isSender = t.from_account === (me.accounts && me.accounts.length > 0 ? me.accounts[0].account_number : '');
-    const icon = isSender ? 'send' : 'download';
-    const amountStr = isSender ? `- ₹${t.amount.toLocaleString()}` : `+ ₹${t.amount.toLocaleString()}`;
-    const amountColor = isSender ? 'var(--text-primary)' : 'var(--success-color)';
-    return `
-      <div class="activity-item">
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <div style="width: 40px; height: 40px; border-radius: 8px; background: #F3F4F6; display: flex; align-items: center; justify-content: center;">
-            <i data-lucide="${icon}" width="20" color="var(--text-secondary)"></i>
-          </div>
-          <div>
-            <div style="font-size: 14px; font-weight: 500;">${isSender ? 'Transfer to ' + t.to_account : 'Received from ' + t.from_account}</div>
-            <div style="font-size: 12px; color: var(--text-secondary);">${new Date(t.timestamp).toLocaleDateString()}</div>
-          </div>
+function renderTxnRow(t, me) {
+  const isSender = t.from_account === (me.accounts && me.accounts.length > 0 ? me.accounts[0].account_number : '');
+  const isFailed = t.status === 'failed';
+  const icon = isSender ? 'send' : 'download';
+  
+  let amountStr = '';
+  let amountColor = 'var(--text-primary)';
+  let bgStyle = '';
+  let borderStyle = 'border-bottom: 1px solid var(--panel-border);';
+  
+  if (isFailed) {
+      amountStr = `Blocked (₹${t.amount.toLocaleString()})`;
+      amountColor = 'var(--danger-color)';
+      bgStyle = 'background-color: rgba(239, 68, 68, 0.05); padding: 12px; border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(239, 68, 68, 0.15); width: 100%;';
+      borderStyle = '';
+  } else {
+      amountStr = isSender ? `- ₹${t.amount.toLocaleString()}` : `+ ₹${t.amount.toLocaleString()}`;
+      amountColor = isSender ? 'var(--text-primary)' : 'var(--success-color)';
+  }
+  
+  return `
+    <div class="activity-item" style="${bgStyle} ${borderStyle} display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div style="width: 40px; height: 40px; border-radius: 8px; background: ${isFailed ? '#FEE2E2' : '#F3F4F6'}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i data-lucide="${isFailed ? 'shield-alert' : icon}" width="20" color="${isFailed ? 'var(--danger-color)' : 'var(--text-secondary)'}"></i>
         </div>
-        <div style="text-align: right;">
-          <div style="font-weight: 600; color: ${amountColor};">${amountStr}</div>
-          ${t.flagged ? `<div style="font-size: 10px; color: var(--danger-color); font-weight: 600;">🚨 ${t.flag_reason || 'AI Flag'}</div>` : ''}
+        <div>
+          <div style="font-size: 14px; font-weight: 500; ${isFailed ? 'color: var(--danger-color);' : ''}">
+            ${isFailed ? (isSender ? 'Blocked Transfer to ' + t.to_account : 'Blocked Receipt from ' + t.from_account) : (isSender ? 'Transfer to ' + t.to_account : 'Received from ' + t.from_account)}
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary);">${new Date(t.timestamp).toLocaleDateString()}</div>
         </div>
       </div>
-    `;
-  }).join('') || '<div style="padding: 16px; color: var(--text-secondary); font-size: 14px;">No recent transactions.</div>';
+      <div style="text-align: right;">
+        <div style="font-weight: 600; color: ${amountColor};">${amountStr}</div>
+        ${t.flagged ? `<div style="font-size: 10px; color: var(--danger-color); font-weight: 600; margin-top: 4px;">🚨 ${t.flag_reason || 'AI Flag'}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+async function refreshTransactions(me){
+  const txns = await api('/api/transactions');
+  document.getElementById('txnList').innerHTML = txns.map(t => renderTxnRow(t, me)).join('') || '<div style="padding: 16px; color: var(--text-secondary); font-size: 14px;">No recent transactions.</div>';
   lucide.createIcons();
 }
 
@@ -696,7 +744,6 @@ async function refreshAll(){
   CURRENT_USER = me;
   
   document.getElementById('headerUsername').textContent = me.username;
-
   document.getElementById('headerRiskBadge').innerHTML = '';
   
   if(me.accounts && me.accounts.length > 0) {
@@ -706,33 +753,8 @@ async function refreshAll(){
   }
 
   const txns = await api('/api/transactions');
-  
-  document.getElementById('txnList').innerHTML = txns.map(t => {
-    const isSender = t.from_account === (me.accounts && me.accounts.length > 0 ? me.accounts[0].account_number : '');
-    const icon = isSender ? 'send' : 'download';
-    const amountStr = isSender ? `- ₹${t.amount.toLocaleString()}` : `+ ₹${t.amount.toLocaleString()}`;
-    const amountColor = isSender ? 'var(--text-primary)' : 'var(--success-color)';
-    
-    return `
-      <div class="activity-item">
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <div style="width: 40px; height: 40px; border-radius: 8px; background: #F3F4F6; display: flex; align-items: center; justify-content: center;">
-            <i data-lucide="${icon}" width="20" color="var(--text-secondary)"></i>
-          </div>
-          <div>
-            <div style="font-size: 14px; font-weight: 500;">${isSender ? 'Transfer to ' + t.to_account : 'Received from ' + t.from_account}</div>
-            <div style="font-size: 12px; color: var(--text-secondary);">${new Date(t.timestamp).toLocaleDateString()}</div>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-weight: 600; color: ${amountColor};">${amountStr}</div>
-          ${t.flagged ? `<div style="font-size: 10px; color: var(--danger-color); font-weight: 600;">🚨 ${t.flag_reason || 'AI Flag'}</div>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('') || '<div style="padding: 16px; color: var(--text-secondary); font-size: 14px;">No recent transactions.</div>';
-
-  lucide.createIcons(); // re-init icons for dynamic content
+  document.getElementById('txnList').innerHTML = txns.map(t => renderTxnRow(t, me)).join('') || '<div style="padding: 16px; color: var(--text-secondary); font-size: 14px;">No recent transactions.</div>';
+  lucide.createIcons();
 }
 
 async function fetchGlobalEvents() {
@@ -774,11 +796,32 @@ async function fetchGlobalEvents() {
             <td>${ev.username || '—'}</td>
             <td class="muted">${ev.details || ''}</td>
             </tr>`).join('') || '<tr><td colspan="6" style="color:var(--text-secondary);">No threat intel events logged</td></tr>';
+
+        // Populate target user select dropdowns
+        const userOptions = `<option value="">-- Select User --</option>` +
+                            `<option value="0">Unknown / Dummy User (Brute Force Sim)</option>` +
+                            r.users.map(u => `<option value="${u.id}">${u.username} (ID: ${u.id})</option>`).join('');
+        
+        const cardSelect = document.getElementById('targetUserIdCard');
+        if (cardSelect) {
+            const currentVal = cardSelect.value;
+            cardSelect.innerHTML = userOptions;
+            if (currentVal) cardSelect.value = currentVal;
+        }
+        
+        const sheetSelect = document.getElementById('targetUserIdSheet');
+        if (sheetSelect) {
+            const currentVal = sheetSelect.value;
+            sheetSelect.innerHTML = userOptions;
+            if (currentVal) sheetSelect.value = currentVal;
+        }
     } catch(e) { console.error('fetchGlobalEvents error', e); }
 }
 
 async function doTransfer(){
   sendBehavioralTelemetry();
+  const loader = document.getElementById('loadingOverlay');
+  if (loader) loader.classList.remove('hidden');
   try{
     const r = await api('/api/transfer','POST',{
       to_account: document.getElementById('toAccount').value,
@@ -789,17 +832,34 @@ async function doTransfer(){
     document.getElementById('toAccount').value = '';
     document.getElementById('amount').value = '';
     await refreshAll();
-  }catch(e){ toast('Transfer failed: '+e.message); }
+  }catch(e){ 
+    toast('Transfer failed: '+e.message); 
+  }finally{
+    if (loader) loader.classList.add('hidden');
+  }
 }
 
-async function simulateEvent(){
+async function simulateEvent(fromSheet = false){
   try{
-    const type = document.getElementById('eventType').value;
-    const r = await api('/api/security/simulate','POST',{event_type:type, device_id:'suspicious-workstation'});
-    toast('Threat Intel Injected: '+r.message);
+    let type, targetUser;
+    if (fromSheet) {
+      type = document.getElementById('eventTypeSheet').value;
+      targetUser = document.getElementById('targetUserIdSheet').value;
+    } else {
+      type = document.getElementById('eventType').value;
+      targetUser = document.getElementById('targetUserIdCard').value;
+    }
+    
+    const payload = { event_type: type, device_id: 'suspicious-workstation' };
+    if (targetUser.trim() !== '') {
+      payload.target_user_id = parseInt(targetUser, 10);
+    }
+    
+    const r = await api('/api/security/simulate', 'POST', payload);
+    toast('Threat Intel Injected: ' + r.message);
     closeSheet();
     await fetchGlobalEvents();
-  }catch(e){ toast('Error: '+e.message); }
+  }catch(e){ toast('Error: ' + e.message); }
 }
 
 async function saveSettings(){
@@ -811,6 +871,15 @@ async function saveSettings(){
     toast('Security settings updated successfully');
     closeSheet();
   }catch(e){ toast('Error: '+e.message); }
+}
+
+async function resetDemo(){
+  if(!confirm("Are you sure you want to delete all transactions, security logs, and reset user balances?")) return;
+  try{
+    const r = await api('/api/admin/reset','POST');
+    toast(r.message);
+    await fetchGlobalEvents();
+  }catch(e){ toast('Error resetting: '+e.message); }
 }
 
 let networkGraph = null;

@@ -38,15 +38,28 @@ def simulate_security_event():
     device_id = data.get("device_id", "demo-device")
     ip_address = data.get("ip_address", request.remote_addr or "0.0.0.0")
 
+    target_user_id = user["id"]
     db = get_db()
-    _log_security_event(db, user["id"], event_type, device_id, ip_address)
+
+    if user["risk_level"] == "admin" and "target_user_id" in data:
+        try:
+            target_user_id = int(data["target_user_id"])
+            # Validate if target user exists (allowing 0 as dummy for non-existent user brute force)
+            if target_user_id != 0:
+                target_exists = db.execute("SELECT 1 FROM users WHERE id = ?", (target_user_id,)).fetchone()
+                if not target_exists:
+                    return jsonify({"error": "target user not found"}), 404
+        except (ValueError, TypeError):
+            return jsonify({"error": "invalid target_user_id"}), 400
+
+    _log_security_event(db, target_user_id, event_type, device_id, ip_address)
 
     severity = EVENT_CATALOGUE[event_type][0]
     if severity in ("high", "critical"):
         db.execute("UPDATE users SET risk_level = 'elevated' WHERE id = ? AND risk_level = 'normal'",
-                   (user["id"],))
+                   (target_user_id,))
     db.commit()
-    return jsonify({"message": f"simulated event '{event_type}' logged", "severity": severity})
+    return jsonify({"message": f"simulated event '{event_type}' logged for target user", "severity": severity})
 
 
 @telemetry_bp.route("/api/security/events", methods=["GET"])
