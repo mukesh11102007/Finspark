@@ -60,5 +60,18 @@ def init_db():
         );
         """
     )
+    
+    # Create admin user if it doesn't exist
+    from werkzeug.security import generate_password_hash
+    from datetime import datetime
+    
+    admin = db.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()
+    if not admin:
+        now = datetime.utcnow().isoformat()
+        db.execute(
+            "INSERT INTO users (username, password_hash, created_at, risk_level) VALUES (?, ?, ?, ?)",
+            ("admin", generate_password_hash("pass"), now, "admin")
+        )
+
     db.commit()
     db.close()
