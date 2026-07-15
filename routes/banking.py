@@ -87,16 +87,6 @@ def transfer():
 
     now = datetime.utcnow().isoformat()
 
-    if from_acc["balance"] < amount:
-        reason = "Insufficient funds to complete the transfer."
-        ai_exp = generate_ai_explanation(reason)
-        db.execute(
-            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, flag_reason) VALUES (?, ?, ?, ?, ?, 1, ?)",
-            (from_acc["account_number"], to_account, amount, now, "failed", ai_exp),
-        )
-        db.commit()
-        return jsonify({"error": "insufficient funds", "reason": ai_exp}), 400
-
     # ========================================================
     # SELF TRANSFER BYPASS (No risk scoring for own account)
     # ========================================================
@@ -118,6 +108,16 @@ def transfer():
             "flag_reason": None,
             "fraud_score": 0.0
         })
+
+    if from_acc["balance"] < amount:
+        reason = "Insufficient funds to complete the transfer."
+        ai_exp = generate_ai_explanation(reason)
+        db.execute(
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, flag_reason) VALUES (?, ?, ?, ?, ?, 1, ?)",
+            (from_acc["account_number"], to_account, amount, now, "failed", ai_exp),
+        )
+        db.commit()
+        return jsonify({"error": "insufficient funds", "reason": ai_exp}), 400
 
     # ========================================================
     # CORRELATION ENGINE & ML HYBRID GUARD
