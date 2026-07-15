@@ -57,7 +57,8 @@ def transfer():
     import json
     
     if is_self_transfer:
-        # Self-transfer: credit and debit cancel out — just log the transaction
+        # Self-transfer: credit the amount directly to the account balance (no deduction)
+        db.execute("UPDATE accounts SET balance = balance + ? WHERE id = ?", (amount, from_acc["id"]))
         cur = db.execute(
             "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, ai_fraud_score, score_features) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (from_acc["account_number"], to_account, amount, now, "success", 0.0, json.dumps(["Self-transfer: no risk applied"])),
