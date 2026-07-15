@@ -45,7 +45,9 @@ def init_db():
             status TEXT NOT NULL,
             flagged INTEGER DEFAULT 0,
             flag_reason TEXT,
-            ai_fraud_score REAL DEFAULT 0.0
+            ai_fraud_score REAL DEFAULT 0.0,
+            score_features TEXT,
+            feedback TEXT
         );
 
         CREATE TABLE IF NOT EXISTS security_events (

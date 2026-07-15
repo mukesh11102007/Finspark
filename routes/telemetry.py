@@ -12,7 +12,8 @@ EVENT_CATALOGUE = {
     "device_compromised": ("critical", "Laptop reported as compromised (C2 beacon traffic detected)."),
     "brute_force_attempt": ("high", "Multiple failed login attempts detected in a short window."),
     "vpn_anomaly": ("low", "User connected through an unrecognized VPN/proxy exit node."),
-    "behavioral_anomaly": ("medium", "Client-side tracking detected unusual interaction patterns (mouse/keystrokes).")
+    "behavioral_anomaly": ("medium", "Client-side tracking detected unusual interaction patterns (mouse/keystrokes)."),
+    "quantum_exfiltration": ("critical", "Anomalous sustained high-volume encrypted data transfer (HNDL risk).")
 }
 
 def _log_security_event(db, user_id, event_type, device_id, ip_address, details=None):
@@ -77,3 +78,27 @@ def log_behavior():
          db.commit()
          
     return jsonify({"message": "telemetry logged"})
+
+@telemetry_bp.route("/api/telemetry/quantum", methods=["POST"])
+def log_quantum():
+    user = require_login()
+    if not user:
+        return jsonify({"error": "not authenticated"}), 401
+    
+    data = request.get_json(force=True)
+    bytes_transferred = data.get("bytes_transferred", 0)
+    
+    db = get_db()
+    _log_security_event(
+        db, 
+        user["id"], 
+        "quantum_exfiltration", 
+        "tracked-device", 
+        request.remote_addr, 
+        f"Detected {bytes_transferred/1024:.0f} KB of anomalous encrypted data upload."
+    )
+    
+    # Increase user risk level to trigger step-up auth for transactions
+    db.execute("UPDATE users SET risk_level = 'high' WHERE id = ?", (user["id"],))
+    db.commit()
+    return jsonify({"message": "quantum risk logged"})
