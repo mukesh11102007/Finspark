@@ -2305,6 +2305,53 @@
         await showDashboard();
       } catch (e) { /* Stay on login */ }
     })();
+    
+    // ==========================================
+    // STRETCH GOAL: Frontend Telemetry Recorder
+    // ==========================================
+    /*
+      Privacy Note: In a production environment, this data must be anonymized, heavily secured, 
+      and consented to by the user. For this hackathon demo, we capture raw X/Y coordinates 
+      and typing speed to demonstrate how the ML model detects anomalies (robotic vs human).
+    */
+    const telemetryData = {
+        mouse_movements: [],
+        typing_speed_wpm: 0,
+        keystrokes: 0,
+        startTime: Date.now()
+    };
+
+    // Track Mouse Movements (throttled to avoid flooding)
+    let lastMouseMove = 0;
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now();
+        if (now - lastMouseMove > 100) { // capture every 100ms
+            telemetryData.mouse_movements.push({ x: e.clientX, y: e.clientY, time: now - telemetryData.startTime });
+            // keep only the last 50 movements
+            if (telemetryData.mouse_movements.length > 50) telemetryData.mouse_movements.shift();
+            lastMouseMove = now;
+        }
+    });
+
+    // Track Typing Speed (WPM)
+    document.addEventListener('keyup', (e) => {
+        telemetryData.keystrokes++;
+        const elapsedMinutes = (Date.now() - telemetryData.startTime) / 60000;
+        if (elapsedMinutes > 0) {
+            // roughly 5 chars per word
+            telemetryData.typing_speed_wpm = (telemetryData.keystrokes / 5) / Math.max(elapsedMinutes, 0.1); 
+        }
+    });
+
+    // We could attach this to the doTransfer() or sendBehavioralTelemetry() functions,
+    // but the hackathon demo just uses sendBehavioralTelemetry to ping the backend simulator.
+    // Logging to console to demonstrate it's working:
+    setInterval(() => {
+        if (telemetryData.keystrokes > 0 || telemetryData.mouse_movements.length > 0) {
+            console.log("[Telemetry Tracker] Current WPM:", Math.round(telemetryData.typing_speed_wpm), "| Recent Mouse Vectors:", telemetryData.mouse_movements.length);
+        }
+    }, 5000);
+
   </script>
 
 </body>

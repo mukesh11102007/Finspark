@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SecureBank | Admin Command Center</title>
+<title>SecureBank | Security Operations Center</title>
 <!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- Vis.js for Network Graphing -->
@@ -14,179 +14,366 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
   :root {
-    --bg-color: #f3f4f6;
-    --primary-color: #D32F2F;
-    --text-primary: #1F2937;
-    --text-secondary: #6B7280;
-    --panel-border: rgba(0, 0, 0, 0.05);
+    --bg-base: #0f172a;      /* Deep navy/slate */
+    --bg-panel: #1e293b;     /* Slightly lighter panel */
+    --border-color: #334155; /* Subtle borders */
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    
+    --accent-red: #ef4444;   /* Threats */
+    --accent-green: #10b981; /* Safe */
+    --accent-blue: #3b82f6;  /* UI Action */
+    --accent-orange: #f59e0b; /* Warnings */
   }
+  
   * { box-sizing: border-box; }
+  
   body {
-    margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-primary);
+    margin: 0; 
+    font-family: 'Inter', sans-serif; 
+    background: var(--bg-base); 
+    color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
+    display: flex;
     min-height: 100vh;
   }
-  h1, h3 { font-family: 'Outfit', sans-serif; font-weight: 600; margin: 0; }
+  
+  h1, h2, h3 { font-family: 'Outfit', sans-serif; font-weight: 600; margin: 0; }
   .muted { color: var(--text-secondary); font-size: 0.85rem; }
   .hidden { display: none !important; }
 
-  /* Admin Header */
-  .admin-header {
-    background: linear-gradient(135deg, #0f172a, #1e3a5f);
-    color: white; padding: 20px 40px;
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 2px solid #3b82f6;
-    position: sticky; top: 0; z-index: 100;
+  /* ---------------- Sidebar ---------------- */
+  .sidebar {
+    width: 260px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
   }
-  .admin-header h1 { font-size: 1.4rem; color: white; display: flex; align-items: center; gap: 10px; }
-  .admin-header h1 span { color: #60a5fa; }
+  
+  .sidebar-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .sidebar-header h2 {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+  }
+  .sidebar-header span {
+    color: var(--accent-blue);
+  }
+
+  .nav-menu {
+    flex: 1;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .nav-item {
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+  }
+  
+  .nav-item:hover, .nav-item.active {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .nav-item.active {
+    border-left-color: var(--accent-blue);
+  }
+
+  .sidebar-footer {
+    padding: 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
   
   .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 13px;
     font-family: 'Inter', sans-serif; cursor: pointer; border: none; outline: none;
     transition: all 0.2s ease;
   }
+  .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+  .btn-outline:hover { background: rgba(255,255,255,0.05); }
+  .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
 
-  /* Admin Layout */
-  .admin-body { padding: 32px 40px; max-width: 1600px; margin: 0 auto; }
-  
-  /* Top Stat Cards */
-  .admin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
-  .admin-stat-card {
-    background: white; border-radius: 12px; padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid var(--primary-color);
+  /* ---------------- Main Content ---------------- */
+  .main-content {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
-  .admin-stat-card.blue { border-left-color: #3b82f6; }
-  .admin-stat-card.green { border-left-color: #10b981; }
-  .admin-stat-card.red { border-left-color: #ef4444; }
-  .admin-stat-card.orange { border-left-color: #f59e0b; }
-  .admin-stat-card .stat-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
-  .admin-stat-card .stat-value { font-size: 2rem; font-weight: 700; color: var(--text-primary); }
 
-  /* Dense Dashboard Grid */
-  .dashboard-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: minmax(min-content, max-content);
+  .topbar {
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-base);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar h1 { font-size: 1.5rem; }
+
+  .dashboard-body {
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
     gap: 24px;
   }
 
-  /* Full Width Row */
-  .full-width { grid-column: 1 / -1; }
+  /* Stat Cards */
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+  }
+  .stat-card {
+    background: var(--bg-panel); border-radius: 12px; padding: 20px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--accent-blue);
+  }
+  .stat-card.red::after { background: var(--accent-red); }
+  .stat-card.orange::after { background: var(--accent-orange); }
+  .stat-card.green::after { background: var(--accent-green); }
+  
+  .stat-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); font-family: 'Outfit'; }
 
-  .admin-card { 
-    background: white; border-radius: 14px; padding: 24px; 
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06); 
+  /* Charts Grid */
+  .charts-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+  }
+  
+  .panel { 
+    background: var(--bg-panel); border-radius: 14px; padding: 24px; 
+    border: 1px solid var(--border-color);
     display: flex; flex-direction: column;
   }
-  .admin-card h3 { font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  
-  /* Scrollable Table Containers */
+  .panel h3 { font-size: 1.1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* Custom Selects & Inputs for dark theme */
+  select, input {
+    background: var(--bg-base);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 10px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--accent-blue); }
+
+  /* Tables */
   .table-container {
     overflow-y: auto; overflow-x: auto;
-    max-height: 350px; /* Limits height, enables scrolling */
-    border: 1px solid var(--panel-border);
-    border-radius: 8px;
+    max-height: 400px;
   }
   .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
-  .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-  .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .table-container::-webkit-scrollbar-track { background: var(--bg-base); border-radius: 4px; }
+  .table-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  thead { position: sticky; top: 0; background: #f8fafc; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-  th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--panel-border); }
-  th { color: var(--text-secondary); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
-  tr:hover td { background: rgba(0,0,0,0.015); }
+  thead { position: sticky; top: 0; background: var(--bg-panel); z-index: 10; }
+  th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+  th { color: var(--text-secondary); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;}
+  tr:hover td { background: rgba(255,255,255,0.02); }
 
-  /* Utilities */
-  .sev-badge { display: inline-block; padding: 3px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
-  .sev-low { background: rgba(59,130,246,0.1); color: #3b82f6; }
-  .sev-medium { background: rgba(245,158,11,0.1); color: #d97706; }
-  .sev-high { background: rgba(239,68,68,0.15); color: #ef4444; }
-  .sev-critical { background: #ef4444; color: white; }
-  
-  .risk-normal { background: rgba(16,185,129,0.1); color: #10b981; padding: 3px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
-  .risk-elevated { background: rgba(245,158,11,0.1); color: #d97706; padding: 3px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
-  .risk-high { background: rgba(239,68,68,0.15); color: #ef4444; padding: 3px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
-  
-  #network-graph { width: 100%; height: 350px; border: 1px solid var(--panel-border); border-radius: 12px; background: #fff; }
+  /* Badges & Tags */
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+  .bg-red { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+  .bg-orange { background: rgba(245,158,11,0.15); color: var(--accent-orange); }
+  .bg-green { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+  .bg-blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+
+  /* Feedback Buttons */
+  .feedback-btn {
+    border: none; padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s;
+  }
+  .btn-fp { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.3); }
+  .btn-fp:hover { background: var(--accent-orange); color: #fff; }
+  .btn-tp { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); margin-right: 6px; }
+  .btn-tp:hover { background: var(--accent-green); color: #fff; }
+
+  #network-graph { width: 100%; height: 350px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--border-color); }
   
   #toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: #333; color: #fff; padding: 12px 24px; border-radius: 24px;
-    font-weight: 500; font-size: 13px; display: none;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); z-index: 2000;
+    background: var(--accent-blue); color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-weight: 600; font-size: 13px; display: none;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); z-index: 2000;
   }
+  
+  /* Sections toggling */
+  .view-section { display: none; }
+  .view-section.active { display: flex; flex-direction: column; gap: 24px; }
 </style>
 </head>
 <body>
 
-<div id="adminSection" style="width: 100%; min-height: 100vh; background: #f3f4f6;">
-  <div class="admin-header">
-    <h1><i data-lucide="shield" width="24"></i> SecureBank <span>Admin Command Center</span></h1>
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <span style="font-size: 13px; opacity: 0.7;">Logged in as <b>admin</b></span>
-      <button class="btn" style="background: rgba(255,255,255,0.1); color: white;" onclick="fetchGlobalEvents();">↻ Refresh</button>
-      <button class="btn" style="background: #e11d48; color: white;" onclick="resetDemo()">🗑️ Reset Demo</button>
-      <button class="btn" style="background: #ef4444; color: white;" onclick="logout()">Sign Out</button>
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <i data-lucide="shield-alert" width="28" style="color: var(--accent-blue);"></i>
+    <h2>SecureBank <span>SOC</span></h2>
+  </div>
+  
+  <div class="nav-menu">
+    <a class="nav-item active" onclick="switchTab('dashboard', this)"><i data-lucide="layout-dashboard" width="18"></i> Overview</a>
+    <a class="nav-item" onclick="switchTab('threats', this)"><i data-lucide="activity" width="18"></i> Threat Intel</a>
+    <a class="nav-item" onclick="switchTab('network', this)"><i data-lucide="network" width="18"></i> Network Flow</a>
+    <a class="nav-item" onclick="switchTab('simulator', this)"><i data-lucide="terminal" width="18"></i> Simulator</a>
+  </div>
+  
+  <div class="sidebar-footer">
+    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Logged in as <b style="color: white;">admin</b></div>
+    <button class="btn btn-outline" onclick="fetchGlobalEvents();"><i data-lucide="refresh-cw" width="14"></i> Refresh Data</button>
+    <button class="btn btn-danger" onclick="resetDemo()"><i data-lucide="trash-2" width="14"></i> Reset Demo</button>
+    <button class="btn btn-outline" onclick="logout()"><i data-lucide="log-out" width="14"></i> Sign Out</button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+  <div class="topbar">
+    <h1 id="pageTitle">Security Operations Center</h1>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-green); background: rgba(16,185,129,0.1); padding: 6px 12px; border-radius: 20px;">
+        <span style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 8px var(--accent-green);"></span> System Online
+      </span>
     </div>
   </div>
 
-  <div class="admin-body">
-    <!-- Stat Cards -->
-    <div class="admin-grid">
-      <div class="admin-stat-card blue">
-        <div class="stat-label">Total Users</div>
-        <div class="stat-value" id="statUsers">—</div>
+  <div class="dashboard-body">
+    
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard" class="view-section active">
+      <!-- Stat Cards -->
+      <div class="stat-grid">
+        <div class="stat-card blue">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value" id="statUsers">—</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">AI Flagged Txns</div>
+          <div class="stat-value" id="statFlagged">—</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">Security Events</div>
+          <div class="stat-value" id="statEvents">—</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Network Nodes</div>
+          <div class="stat-value" id="statNodes">—</div>
+        </div>
       </div>
-      <div class="admin-stat-card red">
-        <div class="stat-label">Flagged Transactions</div>
-        <div class="stat-value" id="statFlagged">—</div>
+
+      <!-- Charts Row -->
+      <div class="charts-layout">
+        <div class="panel">
+          <h3><i data-lucide="trending-up" width="18" style="color: var(--accent-red);"></i> Network Traffic Anomalies (Risk Score)</h3>
+          <div style="height: 250px; width: 100%;"><canvas id="riskChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3><i data-lucide="pie-chart" width="18" style="color: var(--accent-blue);"></i> Alert Sources</h3>
+          <div style="height: 250px; width: 100%;"><canvas id="telemetryChart"></canvas></div>
+        </div>
       </div>
-      <div class="admin-stat-card orange">
-        <div class="stat-label">Security Events</div>
-        <div class="stat-value" id="statEvents">—</div>
+
+      <!-- Flagged Transactions Table -->
+      <div class="panel">
+        <h3><i data-lucide="shield-alert" width="18" style="color: var(--accent-red);"></i> Flagged Transactions (AI Detected)</h3>
+        <p class="muted" style="margin-bottom: 16px;">Review blocked transactions and provide feedback to retrain the ML classifier.</p>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Time</th><th>From</th><th>To</th><th>Amount</th><th>Flag Reason (Explainable AI)</th><th>Score</th><th>Action</th></tr></thead>
+            <tbody id="flaggedTable"></tbody>
+          </table>
+        </div>
       </div>
-      <div class="admin-stat-card green">
-        <div class="stat-label">Network Nodes</div>
-        <div class="stat-value" id="statNodes">—</div>
+    </div>
+    
+    <!-- THREAT INTEL TAB -->
+    <div id="tab-threats" class="view-section">
+      <div class="panel">
+        <h3><i data-lucide="activity" width="18" style="color: var(--accent-orange);"></i> Global Threat Intelligence Logs</h3>
+        <p class="muted" style="margin-bottom: 16px;">Raw stream of security events, biometric anomalies, and access logs.</p>
+        <div class="table-container" style="max-height: 700px;">
+          <table>
+            <thead><tr><th>Timestamp</th><th>Event Type</th><th>Severity</th><th>Device ID</th><th>User</th><th>Details</th></tr></thead>
+            <tbody id="eventTable"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- Dashboard Layout Grid -->
-    <div class="dashboard-layout">
-      
-      <!-- Charts Row -->
-      <div class="admin-card">
-        <h3><i data-lucide="bar-chart-2" width="18"></i> Alert Volume & Risk</h3>
-        <div style="height: 250px; width: 100%;"><canvas id="riskChart"></canvas></div>
-      </div>
-      <div class="admin-card">
-        <h3><i data-lucide="pie-chart" width="18"></i> Cyber Telemetry Sources</h3>
-        <div style="height: 250px; width: 100%;"><canvas id="telemetryChart"></canvas></div>
-      </div>
-
-      <!-- Network & Simulator Row -->
-      <div class="admin-card">
-        <h3><i data-lucide="network" width="18"></i> Anti-Fraud Network Graph</h3>
-        <p class="muted" style="margin-bottom: 12px; font-size: 13px;">Visualize money flow to detect patterns.</p>
+    <!-- NETWORK FLOW TAB -->
+    <div id="tab-network" class="view-section">
+      <div class="panel">
+        <h3><i data-lucide="network" width="18" style="color: var(--accent-blue);"></i> Anti-Fraud Network Graph</h3>
+        <p class="muted" style="margin-bottom: 16px;">Visualize money flow and account relationships to detect mule rings.</p>
         <div id="network-graph"></div>
       </div>
-      <div class="admin-card">
-        <h3><i data-lucide="alert-triangle" width="18"></i> Simulate Security Telemetry</h3>
-        <p class="muted" style="margin-bottom: 16px; font-size: 13px;">Fire a simulated event to test the Correlation Engine.</p>
-        <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <div class="panel">
+        <h3><i data-lucide="users" width="18"></i> User Directory</h3>
+        <div class="table-container" style="max-height: 250px;">
+          <table>
+            <thead><tr><th>Username</th><th>Risk Level</th></tr></thead>
+            <tbody id="usersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATOR TAB -->
+    <div id="tab-simulator" class="view-section">
+      <div class="panel" style="max-width: 600px;">
+        <h3><i data-lucide="terminal" width="18" style="color: var(--accent-red);"></i> Simulate Security Telemetry</h3>
+        <p class="muted" style="margin-bottom: 24px;">Inject a simulated threat event into the Correlation Engine to observe real-time risk adjustments.</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 20px;">
           <div>
-            <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Target User</label>
-            <select id="targetUserIdCard" style="width: 100%; padding: 12px; margin-top: 6px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 8px;">Target User</label>
+            <select id="targetUserIdCard" style="width: 100%;">
               <option value="">-- Select User --</option>
               <option value="0">Unknown / Dummy User</option>
             </select>
           </div>
           <div>
-            <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Event Type</label>
-            <select id="eventType" style="width: 100%; padding: 12px; margin-top: 6px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 8px;">Event Type</label>
+            <select id="eventType" style="width: 100%;">
               <option value="new_device_login">New Device Login</option>
               <option value="impossible_travel">Impossible Travel Anomaly</option>
               <option value="malware_detected">Malware Signature Detected</option>
@@ -195,41 +382,11 @@
               <option value="vpn_anomaly">VPN / Proxy Exit Node</option>
             </select>
           </div>
-          <button class="btn" style="background: #ef4444; color: white; width: 100%; padding: 14px;" onclick="simulateEvent()">🚨 Inject Threat Intel</button>
-        </div>
-        
-        <h3 style="margin-top: 32px;"><i data-lucide="users" width="18"></i> Users</h3>
-        <div class="table-container" style="max-height: 150px;">
-          <table>
-            <thead><tr><th>Username</th><th>Risk</th></tr></thead>
-            <tbody id="usersTable"></tbody>
-          </table>
+          <button class="btn" style="background: var(--accent-red); color: white; margin-top: 10px;" onclick="simulateEvent()"><i data-lucide="zap" width="16"></i> Inject Threat Intel</button>
         </div>
       </div>
-
-      <!-- Tables Full Width Row -->
-      <div class="admin-card full-width">
-        <h3><i data-lucide="alert-circle" width="18"></i> Flagged Transactions (AI Detected)</h3>
-        <p class="muted" style="margin-bottom: 12px; font-size: 13px;">Review blocked transactions and provide feedback to improve the ML model.</p>
-        <div class="table-container">
-          <table>
-            <thead><tr><th>Time</th><th>From</th><th>To</th><th>Amount</th><th>Flag Reason (XAI)</th><th>Score</th><th>Feedback</th></tr></thead>
-            <tbody id="flaggedTable"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="admin-card full-width">
-        <h3><i data-lucide="activity" width="18"></i> Global Threat Intelligence Logs</h3>
-        <div class="table-container">
-          <table>
-            <thead><tr><th>Timestamp</th><th>Event Type</th><th>Severity</th><th>Device ID</th><th>User</th><th>Details</th></tr></thead>
-            <tbody id="eventTable"></tbody>
-          </table>
-        </div>
-      </div>
-
     </div>
+
   </div>
 </div>
 
@@ -237,6 +394,26 @@
 
 <script>
 lucide.createIcons();
+
+// Chart Theme Configuration for Dark Mode
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+function switchTab(tabId, el) {
+  document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  if(el) el.classList.add('active');
+  
+  const titles = {
+      'dashboard': 'Security Operations Center',
+      'threats': 'Threat Intelligence',
+      'network': 'Network Flow Analysis',
+      'simulator': 'Threat Simulator'
+  };
+  document.getElementById('pageTitle').textContent = titles[tabId];
+}
 
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -259,13 +436,13 @@ async function api(path, method = 'GET', body = null) {
   try {
     const me = await api('/api/me');
     if (me.username.toLowerCase() !== 'admin') {
-      window.location.href = '/'; // Redirect non-admins to client UI
+      window.location.href = '/'; 
     } else {
       await fetchGlobalEvents();
       setInterval(fetchGlobalEvents, 10000); // Auto-refresh every 10s
     }
   } catch(e) {
-    window.location.href = '/'; // Not logged in
+    window.location.href = '/'; 
   }
 })();
 
@@ -274,7 +451,6 @@ async function logout() {
   window.location.href = '/';
 }
 
-// Admin API calls and UI updates
 let riskChartInstance = null;
 let telemetryChartInstance = null;
 let networkGraph = null;
@@ -331,21 +507,27 @@ async function fetchGlobalEvents() {
     }
 
     // Users
-    document.getElementById('usersTable').innerHTML = r.users.map(u => `
+    document.getElementById('usersTable').innerHTML = r.users.map(u => {
+      let riskClass = 'bg-blue';
+      if(u.risk_level === 'elevated') riskClass = 'bg-orange';
+      if(u.risk_level === 'high' || u.risk_level === 'critical') riskClass = 'bg-red';
+      if(u.risk_level === 'normal') riskClass = 'bg-green';
+      return `
       <tr>
-        <td style="font-weight: 600;">${u.username}</td>
-        <td><span class="risk-${u.risk_level || 'normal'}">${u.risk_level || 'normal'}</span></td>
-      </tr>`).join('') || '<tr><td colspan="2" class="muted">No users found</td></tr>';
+        <td style="font-weight: 500; color: white;">${u.username}</td>
+        <td><span class="badge ${riskClass}">${u.risk_level || 'normal'}</span></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="2" class="muted">No users found</td></tr>';
 
     // Flagged Txns
     document.getElementById('flaggedTable').innerHTML = r.flagged_transactions.map(t => {
-      let xaiHtml = `<div style="color: #ef4444; font-weight: 500; font-size: 11px;">${t.flag_reason || 'AI Flag'}</div>`;
+      let xaiHtml = `<div style="color: var(--accent-red); font-weight: 500; font-size: 12px; margin-bottom: 4px;">${t.flag_reason || 'AI Flag'}</div>`;
       if (t.score_features) {
           try {
               const features = JSON.parse(t.score_features);
-              xaiHtml += '<div style="margin-top: 4px;">';
+              xaiHtml += '<div>';
               features.forEach(f => {
-                  xaiHtml += `<span style="display:inline-block; background:rgba(239,68,68,0.1); color:#ef4444; padding:2px 6px; border-radius:4px; font-size:9px; margin:0 4px 2px 0;">+ ${f}</span>`;
+                  xaiHtml += `<span class="badge bg-red" style="font-size:9px; margin:0 4px 4px 0; text-transform:none;">+ ${f}</span>`;
               });
               xaiHtml += '</div>';
           } catch(e){}
@@ -353,36 +535,45 @@ async function fetchGlobalEvents() {
       
       let feedbackHtml = '';
       if (t.feedback) {
-          feedbackHtml = `<span style="font-size:10px; font-weight:600; color:${t.feedback === 'true_positive' ? '#10b981' : '#f59e0b'};">${t.feedback.replace('_', ' ').toUpperCase()}</span>`;
+          const isTP = t.feedback === 'true_positive';
+          feedbackHtml = `<span class="badge ${isTP ? 'bg-green' : 'bg-orange'}">${t.feedback.replace('_', ' ')}</span>`;
       } else {
           feedbackHtml = `
-              <button onclick="submitAdminFeedback(${t.id}, 'true_positive')" style="background:#10b981; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; margin-right:4px;">True +</button>
-              <button onclick="submitAdminFeedback(${t.id}, 'false_positive')" style="background:#f59e0b; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">False +</button>
+              <div style="display:flex;">
+                <button class="feedback-btn btn-tp" title="Mark True Positive" onclick="submitAdminFeedback(${t.id}, 'true_positive')">Confirm Threat</button>
+                <button class="feedback-btn btn-fp" title="Mark False Positive" onclick="submitAdminFeedback(${t.id}, 'false_positive')">False Positive</button>
+              </div>
           `;
       }
 
       return `
       <tr>
-        <td style="font-size: 11px; color: var(--text-secondary);">${new Date(t.timestamp).toLocaleString()}</td>
-        <td style="font-family:monospace; font-size: 11px;">${t.from_account || '—'}</td>
-        <td style="font-family:monospace; font-size: 11px;">${t.to_account || '—'}</td>
-        <td style="font-weight: 600;">₹${(t.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-        <td>${xaiHtml}</td>
-        <td><div style="font-weight:700; color:${t.ai_fraud_score > 70 ? '#ef4444' : '#f59e0b'};">${t.ai_fraud_score ? t.ai_fraud_score.toFixed(1) : '—'}</div></td>
+        <td style="font-size: 12px; color: var(--text-secondary);">${new Date(t.timestamp).toLocaleTimeString()}</td>
+        <td style="font-family:monospace; font-size: 12px; color: #cbd5e1;">${t.from_account || '—'}</td>
+        <td style="font-family:monospace; font-size: 12px; color: #cbd5e1;">${t.to_account || '—'}</td>
+        <td style="font-weight: 600; color: white; font-size: 14px;">₹${(t.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+        <td style="max-width: 300px; line-height: 1.4;">${xaiHtml}</td>
+        <td><div style="font-weight:700; font-size: 14px; color:${t.ai_fraud_score > 70 ? 'var(--accent-red)' : 'var(--accent-orange)'};">${t.ai_fraud_score ? t.ai_fraud_score.toFixed(1) : '—'}</div></td>
         <td>${feedbackHtml}</td>
       </tr>`;
     }).join('') || '<tr><td colspan="7" class="muted">No flagged transactions</td></tr>';
 
     // Events
-    document.getElementById('eventTable').innerHTML = r.recent_events.map(ev => `
+    document.getElementById('eventTable').innerHTML = r.recent_events.map(ev => {
+      let sevClass = 'bg-blue';
+      if(ev.severity === 'medium') sevClass = 'bg-orange';
+      if(ev.severity === 'high' || ev.severity === 'critical') sevClass = 'bg-red';
+      
+      return `
       <tr>
-        <td style="font-size: 11px;">${new Date(ev.timestamp).toLocaleString()}</td>
-        <td style="font-weight:600; font-size: 11px;">${ev.event_type.replace(/_/g, ' ').toUpperCase()}</td>
-        <td><span class="sev-badge sev-${ev.severity}">${ev.severity}</span></td>
-        <td style="font-family:monospace; font-size: 11px;">${ev.device_id || '—'}</td>
-        <td style="font-size: 11px;">${ev.username || '—'}</td>
-        <td class="muted" style="font-size: 11px;">${ev.details || ''}</td>
-      </tr>`).join('') || '<tr><td colspan="6" class="muted">No threat intel events logged</td></tr>';
+        <td style="font-size: 12px;">${new Date(ev.timestamp).toLocaleString()}</td>
+        <td style="font-weight:500; font-size: 12px; color: white;">${ev.event_type.replace(/_/g, ' ').toUpperCase()}</td>
+        <td><span class="badge ${sevClass}">${ev.severity}</span></td>
+        <td style="font-family:monospace; font-size: 12px;">${ev.device_id || '—'}</td>
+        <td style="font-size: 12px; color: white;">${ev.username || '—'}</td>
+        <td class="muted" style="font-size: 12px;">${ev.details || ''}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" class="muted">No threat intel events logged</td></tr>';
       
     // Graphs & Charts
     updateCharts(r.flagged_transactions, r.recent_events);
@@ -397,6 +588,12 @@ function updateCharts(flaggedTxns, events) {
     const data = flaggedTxns.slice(0, 10).map(t => t.ai_fraud_score);
     
     if (riskChartInstance) riskChartInstance.destroy();
+    
+    // Add gradient for line chart
+    let gradient = ctxRisk.createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(239, 68, 68, 0.4)');
+    gradient.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
     riskChartInstance = new Chart(ctxRisk, {
         type: 'line',
         data: {
@@ -405,12 +602,26 @@ function updateCharts(flaggedTxns, events) {
                 label: 'AI Risk Score',
                 data: data.reverse(),
                 borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                backgroundColor: gradient,
+                borderWidth: 2,
+                pointBackgroundColor: '#0f172a',
+                pointBorderColor: '#ef4444',
+                pointBorderWidth: 2,
                 fill: true,
                 tension: 0.4
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+                y: { min: 0, max: 100, grid: { color: '#334155' } },
+                x: { grid: { color: 'transparent' } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
     });
 
     const ctxTel = document.getElementById('telemetryChart').getContext('2d');
@@ -424,24 +635,55 @@ function updateCharts(flaggedTxns, events) {
             labels: Object.keys(typeCounts).map(k => k.replace(/_/g, ' ')),
             datasets: [{
                 data: Object.values(typeCounts),
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+                borderWidth: 0,
+                hoverOffset: 4
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '70%',
+            plugins: { 
+                legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11, color: '#f8fafc' } } } 
+            } 
+        }
     });
 }
 
 function updateNetwork(graphData) {
     if (!graphData) return;
     const container = document.getElementById('network-graph');
+    
+    // Customize nodes for dark theme
+    const styledNodes = graphData.nodes.map(n => ({ 
+        ...n, 
+        shape: 'dot', 
+        size: 16, 
+        color: { background: '#1e293b', border: '#3b82f6', highlight: { border: '#60a5fa', background: '#0f172a' } },
+        borderWidth: 2,
+        font: { color: '#f8fafc', size: 12, face: 'Inter' } 
+    }));
+    
+    // Customize edges for dark theme
+    const styledEdges = graphData.edges.map(e => ({ 
+        ...e, 
+        arrows: 'to', 
+        color: { color: '#475569', highlight: '#94a3b8' }, 
+        title: `₹${e.value}`,
+        width: 1.5
+    }));
+
     const data = {
-        nodes: new vis.DataSet(graphData.nodes.map(n => ({ ...n, shape: 'dot', size: 22, color: '#3b82f6', font: { color: '#1f2937', size: 13 } }))),
-        edges: new vis.DataSet(graphData.edges.map(e => ({ ...e, arrows: 'to', color: '#9ca3af', title: `₹${e.value}` })))
+        nodes: new vis.DataSet(styledNodes),
+        edges: new vis.DataSet(styledEdges)
     };
+    
     const options = {
-        physics: { stabilization: false, barnesHut: { springLength: 200 } },
-        interaction: { hover: true, tooltipDelay: 200 }
+        physics: { stabilization: false, barnesHut: { springLength: 150, damping: 0.1 } },
+        interaction: { hover: true, tooltipDelay: 100 }
     };
+    
     if (!networkGraph) {
         networkGraph = new vis.Network(container, data, options);
     } else {

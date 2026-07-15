@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from database import init_db
@@ -5,9 +7,11 @@ from routes.auth import auth_bp
 from routes.banking import banking_bp
 from routes.telemetry import telemetry_bp
 
+load_dotenv()
+
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
-app.secret_key = "finspark26-demo-secret-change-me"  # fine for a hackathon demo
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback-secret-for-dev")
 
 # Register Blueprints
 app.register_blueprint(auth_bp)
@@ -29,6 +33,5 @@ def admin():
 
 if __name__ == "__main__":
     init_db()
-    # Run with adhoc SSL for HTTPS to encrypt traffic
-    # Note: Requires 'pyopenssl' installed
-    app.run(debug=True, port=5000, ssl_context='adhoc')
+    # Run on plain HTTP (removed ssl_context='adhoc' to avoid Chrome warnings)
+    app.run(debug=True, port=5000)

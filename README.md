@@ -58,16 +58,21 @@ When a transfer request hits the `/api/transfer` endpoint (`routes/banking.py`),
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started (Run/Install)
 
 ### Prerequisites
-Make sure you have Python installed along with the required standard and ML packages:
+Make sure you have Python installed. The project uses a `requirements.txt` file for easy setup.
 
 ```bash
-pip install flask flask-cors requests scikit-learn pandas numpy joblib pyopenssl
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Configure Environment Variables (Optional but recommended)
+# Copy .env.example to .env and set your FLASK_SECRET_KEY and ADMIN_PASSWORD
+cp .env.example .env
 ```
 
-*Note: For the Explainable AI features to work, ensure [Ollama](https://ollama.com/) is installed and running locally with the `gemma3:4b` model (or update the code to match your preferred model).*
+*Note: For the Explainable AI features to work, ensure [Ollama](https://ollama.com/) is installed and running locally with the `gemma3:4b` model. If Ollama is unavailable, the system will gracefully log a warning and fall back to rule-based explanations.*
 
 ### Running the Application
 
@@ -76,7 +81,7 @@ pip install flask flask-cors requests scikit-learn pandas numpy joblib pyopenssl
    ```bash
    python app.py
    ```
-   *The server runs on **`https://127.0.0.1:5000`** with a self-signed SSL certificate (`ssl_context='adhoc'`).*
+   *The server runs on **`http://127.0.0.1:5000`**.*
 
 2. **Run the Automated Demo**:
    While the server is running, execute the provided script to see the system in action:
@@ -84,23 +89,43 @@ pip install flask flask-cors requests scikit-learn pandas numpy joblib pyopenssl
    python demo.py
    ```
    **Demo Flow**:
-   * Registers dummy users.
-   * Executes a normal transfer (succeeds).
-   * Injects anomalous telemetry (high typing speed, robotic mouse).
-   * Attempts a fraudulent transfer (blocked by ML classifier).
-   * Displays the AI explanation returned by the server.
+   * **Scenario 1:** Normal Human Transfer (Succeeds).
+   * **Scenario 2:** Robotic Behavior (Injects bot telemetry, blocked by ML Engine).
+   * **Scenario 3:** Admin Review & Feedback Loop (Marks the blocked transfer as a false positive).
+
+3. **Resetting the Database**:
+   If reviewers want to start fresh, simply run the reset script to recreate the `bank.db` and the default admin account:
+   ```bash
+   python reset_db.py
+   ```
 
 ---
 
 ## 📊 The Command Center (Admin View)
 
-You can monitor the system visually by opening `https://127.0.0.1:5000` (or `https://127.0.0.1:5000/admin`) in your web browser:
+![Admin Dashboard Mockup](C:/Users/HAPPY/.gemini/antigravity-ide/brain/09c670c9-dbc8-4a37-823d-371f20ba9329/admin_dashboard_mockup_1784109466180.png)
 
-1. **Sign in as Admin**: Use the username **`admin`** and password **`pass`**.
+You can monitor the system visually by opening `https://127.0.0.1:5000/admin` in your web browser:
+
+1. **Sign in as Admin**: Use the username **`admin`** and password **`pass`** (unless changed via `.env`).
 2. **View the Threat Dashboard**:
-   * Monitor flagged transactions and global threat intel logs.
+   * Monitor flagged transactions and global threat intel logs along with Explainable AI texts.
+   * Provide direct feedback (e.g., mark as 'False Positive') to improve the model.
    * Inspect the **Anti-Fraud Network Graph** to detect money mule rings or cyclic transaction patterns.
-   * Manually simulate telemetry events to see how risk scores change in real-time.
+
+---
+
+## 🔒 Security & Production Notes
+
+> [!WARNING]
+> This repository contains hardcoded configurations (like self-signed certificates and placeholder `.env` files) designed specifically for the hackathon demo to ensure a frictionless evaluation. 
+
+For a true production environment, the following hardening steps are mandatory:
+* **Secrets Management**: Remove all hardcoded default passwords. Use a secure vault (e.g., AWS Secrets Manager, HashiCorp Vault) and strictly enforce `.env` usage.
+* **Rate Limiting**: Implement strict rate limits on the `/api/login` and `/api/transfer` endpoints to prevent brute-force attacks and abuse.
+* **Model Security**: The `fraud_model.joblib` should be stored securely and loaded into memory from a private bucket, rather than residing in the public file structure.
+* **Authentication Hardening**: Enforce true JWT-based auth or secure HTTP-only cookies instead of basic session IDs, and require MFA for admin routes.
+* **Frontend Telemetry Privacy**: The stretch-goal telemetry capture script currently logs raw X/Y coordinates for the demo. In production, this data must be anonymized, heavily secured, and explicitly consented to by the user.
 
 ---
 *Built with ❤️ for the Finspark Hackathon.*

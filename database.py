@@ -70,13 +70,18 @@ def init_db():
     # Create admin user if it doesn't exist
     from werkzeug.security import generate_password_hash
     from datetime import datetime
+    import os
+    from dotenv import load_dotenv
+    
+    load_dotenv()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "pass")
     
     admin = db.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()
     if not admin:
         now = datetime.utcnow().isoformat()
         db.execute(
             "INSERT INTO users (username, email, password_hash, created_at, risk_level) VALUES (?, ?, ?, ?, ?)",
-            ("admin", "admin@securebank.com", generate_password_hash("pass"), now, "admin")
+            ("admin", "admin@securebank.com", generate_password_hash(admin_password), now, "admin")
         )
 
     db.commit()

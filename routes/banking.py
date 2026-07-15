@@ -31,6 +31,9 @@ def generate_ai_explanation(reason_details):
             continue
             
     # Rule-based fallback if Ollama is unavailable
+    import logging
+    logging.warning("Ollama LLM is unavailable or models failed. Using rule-based fallback for explanation.")
+    
     reason_lower = reason_details.lower()
     if "insufficient funds" in reason_lower:
         return "The transfer could not be completed because your account balance is insufficient for this amount."
@@ -332,7 +335,7 @@ def admin_overview():
     all_accounts = db.execute("SELECT account_number, user_id FROM accounts").fetchall()
     all_txns = db.execute("SELECT from_account, to_account, amount FROM transactions WHERE status='success'").fetchall()
     
-    nodes = [{"id": a["account_number"], "label": f"User {a['user_id']}\\n{a['account_number']}"} for a in all_accounts]
+    nodes = [{"id": a["account_number"], "label": f"User {a['user_id']}\n\n{a['account_number']}"} for a in all_accounts]
     edges = [{"from": t["from_account"], "to": t["to_account"], "value": t["amount"]} for t in all_txns]
     
     return jsonify({
