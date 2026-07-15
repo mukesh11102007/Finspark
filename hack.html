@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureBank | Account Takeover (ATO) Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0f172a; --panel-bg: #1e293b; --border-color: #334155;
+      --text-main: #f8fafc; --text-muted: #94a3b8;
+      --accent: #10b981; --accent-hover: #059669;
+      --danger: #ef4444; --danger-hover: #dc2626;
+      --warning: #f59e0b;
+      --font-mono: 'Fira Code', monospace; --font-sans: 'Inter', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-main); }
+    h1, h2, h3 { margin-top: 0; }
+    .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .header { grid-column: 1 / -1; text-align: center; padding: 20px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; }
+    .panel { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
+    .panel h2 { font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; color: var(--warning); }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;}
+    input[type="text"], input[type="number"], input[type="password"] { width: 100%; padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-family: var(--font-mono); font-size: 0.9rem; }
+    input:focus { outline: none; border-color: var(--accent); }
+    .btn-group { display: flex; gap: 10px; margin-top: auto; padding-top: 15px;}
+    button { padding: 12px 15px; border: none; border-radius: 4px; font-family: var(--font-sans); font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; transition: background 0.2s; flex: 1; }
+    button:hover { background: var(--accent-hover); }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: var(--danger-hover); }
+    button.warning { background: var(--warning); color: #000; }
+    .console-panel { grid-column: 1 / -1; }
+    #consoleOutput { background: #000; color: #34d399; font-family: var(--font-mono); padding: 15px; height: 300px; overflow-y: auto; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; }
+    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; background: #334155; }
+    .status-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; border-bottom: 1px dashed var(--border-color); padding-bottom: 5px; }
+    .step-box { border-left: 4px solid var(--border-color); padding-left: 15px; margin-bottom: 20px;}
+    .step-box.active { border-left-color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>🥷 The Heist: Account Takeover Simulator</h1>
+      <p style="color: var(--text-muted)">Follow the steps below to simulate hacking a victim's account and stealing their money.</p>
+    </div>
+
+    <!-- Phase 1: Setup -->
+    <div class="panel">
+      <h2>Phase 1: Target Setup</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted)">First, we need to create the Hacker's receiving account, and then set up a Victim account loaded with funds.</p>
+      
+      <div class="step-box active" id="step1">
+        <div class="form-group" style="display:flex; gap:10px; margin-bottom: 10px;">
+          <div style="flex:1;">
+            <label>Target Username</label>
+            <input type="text" id="targetUser" value="prem">
+          </div>
+          <div style="flex:1;">
+            <label>Target Password (Stolen)</label>
+            <input type="password" id="targetPass" value="Prem123!">
+          </div>
+        </div>
+        
+        <div class="status-row">
+          <span>Hacker Account (Destination):</span> <span id="lblHackerAcc" class="status-badge">Not Created</span>
+        </div>
+        <div class="status-row">
+          <span>Victim Account (Target):</span> <span id="lblVictimInfo" class="status-badge">Not Created</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button onclick="setupHeist()">1. Generate Hacker & Victim Accounts</button>
+      </div>
+    </div>
+
+    <!-- Phase 2: The Hack -->
+    <div class="panel">
+      <h2>Phase 2: Account Compromise (ATO)</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted)">The Hacker has stolen the Victim's password. We will now log into the Victim's account using an unrecognized device and IP address (from Russia/VPN).</p>
+      
+      <div class="step-box" id="step2">
+        <div class="status-row">
+          <span>Current Session:</span> <span id="lblSession" class="status-badge" style="color:var(--danger)">Logged Out</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button onclick="compromiseVictim()" class="warning">2. Log into Victim's Account</button>
+      </div>
+    </div>
+
+    <!-- Phase 3: Telemetry Injection -->
+    <div class="panel">
+      <h2>Phase 3: Bot Telemetry Injection</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted)">As the hacker, we are using an automated Python script to perform the transfer instantly. We inject 650 WPM typing speed and robotic mouse movements.</p>
+      
+      <div class="btn-group">
+        <button onclick="injectBotTelemetry()" class="warning">3. Inject Bot Telemetry</button>
+      </div>
+    </div>
+
+    <!-- Phase 4: The Heist -->
+    <div class="panel">
+      <h2>Phase 4: Drain the Account</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted)">Execute the transfer payload to send the victim's money to our hacker account. The AI should detect the anomalies and block this.</p>
+      
+      <div class="form-group">
+        <label>Transfer Amount (₹)</label>
+        <input type="number" id="transferAmount" value="4500">
+      </div>
+      
+      <div class="btn-group">
+        <button onclick="executeHeist()" class="danger">4. Steal Funds (Execute Transfer)</button>
+      </div>
+    </div>
+
+    <!-- Console Output -->
+    <div class="console-panel">
+      <div class="panel" style="padding: 0; border: none; background: transparent;">
+        <h2 style="color:var(--text-main); margin-bottom: 10px;">Live API Response Console</h2>
+        <div id="consoleOutput">System initialized. Awaiting Phase 1...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://127.0.0.1:5000/api";
+    
+    // State variables
+    let hackerAccount = "";
+    let victimCreds = { username: "", password: "" };
+
+    function logToConsole(title, data, isError = false) {
+      const consoleEl = document.getElementById('consoleOutput');
+      const time = new Date().toLocaleTimeString();
+      let color = isError ? 'var(--danger)' : '#60a5fa';
+      
+      let out = `\n[${time}] <span style="color:${color}; font-weight:bold;">[${title}]</span>\n`;
+      if (typeof data === 'object') {
+        out += JSON.stringify(data, null, 2);
+      } else {
+        out += data;
+      }
+      
+      consoleEl.innerHTML += out + "\n";
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(API_BASE + path, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { throw new Error(data.error || JSON.stringify(data)); }
+      return data;
+    }
+
+    async function setupHeist() {
+      try {
+        logToConsole("SETUP", "Creating Hacker Account...");
+        const hNum = Math.floor(Math.random() * 9000) + 1000;
+        const hReg = await api('/register', 'POST', { username: `hacker_${hNum}`, email: `hacker_${hNum}@darkweb.com`, password: "HackerPassword1!" });
+        hackerAccount = hReg.account_number;
+        document.getElementById('lblHackerAcc').innerText = hackerAccount;
+        document.getElementById('lblHackerAcc').style.color = "var(--danger)";
+        
+        logToConsole("SETUP", "Setting up Victim Account...");
+        victimCreds.username = document.getElementById("targetUser").value;
+        victimCreds.password = document.getElementById("targetPass").value;
+        
+        // Try to register. If it fails (already exists), that's fine, we still have the creds.
+        try {
+          await api('/register', 'POST', { username: victimCreds.username, email: `${victimCreds.username}@gmail.com`, password: victimCreds.password });
+        } catch(e) {
+          logToConsole("INFO", `Predefined victim '${victimCreds.username}' already exists, using existing account.`);
+        }
+        
+        document.getElementById('lblVictimInfo').innerText = `${victimCreds.username} (Predefined Target)`;
+        
+        logToConsole("SETUP COMPLETE", "Both accounts created successfully. The Hacker's destination account is ready.");
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+        
+      } catch (e) { logToConsole("SETUP ERROR", e.message, true); }
+    }
+
+    async function compromiseVictim() {
+      if (!victimCreds.username) {
+        alert("Please run Phase 1 first."); return;
+      }
+      
+      try {
+        logToConsole("ATO ATTACK", `Logging in as ${victimCreds.username} using stolen credentials from a new device in Russia...`);
+        
+        // This simulates the hacker logging in. 
+        // The backend should log 'new_device_login' and track the suspicious IP.
+        const loginRes = await api('/login', 'POST', {
+          username: victimCreds.username,
+          password: victimCreds.password,
+          device_id: "kali-linux-unknown-browser",
+          ip_address: "185.120.44.1" // Suspicious VPN IP
+        });
+        
+        document.getElementById('lblSession').innerText = `Logged in as Victim (${victimCreds.username})`;
+        document.getElementById('lblSession').style.color = "var(--warning)";
+        logToConsole("ATO SUCCESS", "Successfully hijacked the Victim's session!");
+        
+      } catch (e) { logToConsole("LOGIN ERROR", e.message, true); }
+    }
+
+    async function injectBotTelemetry() {
+      try {
+        logToConsole("TELEMETRY", "Injecting bot telemetry: 650 WPM, 2 point robotic mouse movement...");
+        
+        const payload = {
+          typing_speed_wpm: 650,
+          mouse_movements: [
+            {x: 0, y: 0, time: 0},
+            {x: 500, y: 500, time: 10} // Impossible straight line
+          ]
+        };
+        
+        const res = await api('/telemetry/behavior', 'POST', payload);
+        logToConsole("TELEMETRY RESPONSE", res);
+      } catch (e) { logToConsole("TELEMETRY ERROR", e.message, true); }
+    }
+
+    async function executeHeist() {
+      if (!hackerAccount) {
+        alert("Please run Phase 1 to generate the hacker's receiving account."); return;
+      }
+      
+      const amount = document.getElementById('transferAmount').value;
+      logToConsole("THE HEIST", `Attempting to drain ₹${amount} to Hacker Account (${hackerAccount})...`);
+      
+      try {
+        const res = await fetch(`${API_BASE}/transfer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to_account: hackerAccount, amount: amount })
+        });
+        const data = await res.json();
+        
+        if (data.flagged || !res.ok) {
+          logToConsole("🛡️ BLOCKED BY AI ENGINE", data, true);
+        } else {
+          logToConsole("💀 FATAL: HEIST SUCCESSFUL", data);
+        }
+      } catch (e) {
+        logToConsole("NETWORK ERROR", e.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

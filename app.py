@@ -31,6 +31,10 @@ def index():
 def admin():
     return send_from_directory(".", "admin.html")
 
+@app.route("/hack")
+def hack():
+    return send_from_directory(".", "hack.html")
+
 if __name__ == "__main__":
     init_db()
     # Run on plain HTTP (removed ssl_context='adhoc' to avoid Chrome warnings)

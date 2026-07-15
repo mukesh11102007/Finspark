@@ -311,6 +311,8 @@ def transactions():
         return jsonify({"error": "not authenticated"}), 401
     db = get_db()
     acc = db.execute("SELECT account_number FROM accounts WHERE user_id = ?", (user["id"],)).fetchone()
+    if not acc:
+        return jsonify([])  # User has no account (e.g. admin)
     rows = db.execute(
         "SELECT * FROM transactions WHERE from_account = ? OR to_account = ? ORDER BY timestamp DESC",
         (acc["account_number"], acc["account_number"]),
@@ -382,3 +384,50 @@ def admin_feedback():
     db.commit()
     
     return jsonify({"message": f"Feedback '{feedback}' recorded for ML retraining loop."})
+
+@banking_bp.route("/api/admin/set_risk", methods=["POST"])
+def admin_set_risk():
+    user = require_login()
+    if not user or user["risk_level"] != "admin":
+        return jsonify({"error": "unauthorized"}), 403
+        
+    data = request.get_json(force=True)
+    target_user_id = data.get("user_id")
+    risk_level = data.get("risk_level")
+    
+    if risk_level not in ('normal', 'elevated', 'high', 'critical'):
+        return jsonify({"error": "invalid risk level"}), 400
+        
+    db = get_db()
+    # Log the manual action
+    from routes.telemetry import _log_security_event
+    _log_security_event(db, target_user_id, "admin_manual_override", "admin-dashboard", request.remote_addr,
+                         f"Admin manually set risk level to {risk_level}.")
+                         
+    db.execute("UPDATE users SET risk_level = ? WHERE id = ?", (risk_level, target_user_id))
+    db.commit()
+    
+    return jsonify({"message": f"User risk level updated to {risk_level}."})
+
+
+@banking_bp.route("/api/admin/delete_user", methods=["POST"])
+def admin_delete_user():
+    user = require_login()
+    if not user or user["risk_level"] != "admin":
+        return jsonify({"error": "unauthorized"}), 403
+        
+    data = request.get_json(force=True)
+    target_user_id = data.get("user_id")
+    
+    db = get_db()
+    # Get account number first
+    acc = db.execute("SELECT account_number FROM accounts WHERE user_id = ?", (target_user_id,)).fetchone()
+    if acc:
+        acc_no = acc["account_number"]
+        db.execute("DELETE FROM transactions WHERE from_account = ? OR to_account = ?", (acc_no, acc_no))
+    db.execute("DELETE FROM security_events WHERE user_id = ?", (target_user_id,))
+    db.execute("DELETE FROM accounts WHERE user_id = ?", (target_user_id,))
+    db.execute("DELETE FROM users WHERE id = ?", (target_user_id,))
+    db.commit()
+    
+    return jsonify({"message": "User and all associated data deleted."})
