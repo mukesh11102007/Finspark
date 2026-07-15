@@ -3,257 +3,470 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SecureBank | Account Takeover (ATO) Simulator</title>
+  <title>SecureBank | Account Takeover Simulator</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #0f172a; --panel-bg: #1e293b; --border-color: #334155;
-      --text-main: #f8fafc; --text-muted: #94a3b8;
-      --accent: #10b981; --accent-hover: #059669;
-      --danger: #ef4444; --danger-hover: #dc2626;
-      --warning: #f59e0b;
-      --font-mono: 'Fira Code', monospace; --font-sans: 'Inter', sans-serif;
+      --bg: #0a0f1e; --panel: #111827; --border: #1f2d45;
+      --green: #10b981; --red: #ef4444; --yellow: #f59e0b;
+      --blue: #3b82f6; --purple: #8b5cf6; --cyan: #06b6d4;
+      --text: #f1f5f9; --muted: #64748b;
+      --mono: 'Fira Code', monospace; --sans: 'Inter', sans-serif;
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 20px; font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-main); }
-    h1, h2, h3 { margin-top: 0; }
-    .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .header { grid-column: 1 / -1; text-align: center; padding: 20px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; }
-    .panel { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
-    .panel h2 { font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; color: var(--warning); }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;}
-    input[type="text"], input[type="number"], input[type="password"] { width: 100%; padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-family: var(--font-mono); font-size: 0.9rem; }
-    input:focus { outline: none; border-color: var(--accent); }
-    .btn-group { display: flex; gap: 10px; margin-top: auto; padding-top: 15px;}
-    button { padding: 12px 15px; border: none; border-radius: 4px; font-family: var(--font-sans); font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; transition: background 0.2s; flex: 1; }
-    button:hover { background: var(--accent-hover); }
-    button.danger { background: var(--danger); }
-    button.danger:hover { background: var(--danger-hover); }
-    button.warning { background: var(--warning); color: #000; }
-    .console-panel { grid-column: 1 / -1; }
-    #consoleOutput { background: #000; color: #34d399; font-family: var(--font-mono); padding: 15px; height: 300px; overflow-y: auto; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; }
-    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; background: #334155; }
-    .status-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; border-bottom: 1px dashed var(--border-color); padding-bottom: 5px; }
-    .step-box { border-left: 4px solid var(--border-color); padding-left: 15px; margin-bottom: 20px;}
-    .step-box.active { border-left-color: var(--accent); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; padding: 20px; }
+
+    .page-header { text-align: center; padding: 24px 0 20px; }
+    .page-header h1 { font-size: 1.8rem; font-weight: 700; }
+    .page-header h1 span { color: var(--red); }
+    .page-header p { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
+
+    .main-grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; max-width: 1300px; margin: 0 auto; }
+
+    /* LEFT: Victim Picker */
+    .victim-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+    .victim-panel h2 { font-size: 0.95rem; color: var(--yellow); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+
+    .hacker-info { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; }
+    .hacker-info span { color: var(--muted); display: block; margin-bottom: 3px; }
+    .hacker-info strong { color: var(--red); font-family: var(--mono); font-size: 0.75rem; word-break: break-all; }
+
+    .users-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 400px; }
+    .user-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: all 0.2s; }
+    .user-card:hover { border-color: var(--yellow); background: rgba(245,158,11,0.08); }
+    .user-card.selected { border-color: var(--red); background: rgba(239,68,68,0.12); }
+    .user-card .uname { font-weight: 600; font-size: 0.9rem; }
+    .user-card .uacc { font-size: 0.75rem; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+    .user-card .urisk { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+    .risk-normal { background: rgba(16,185,129,0.15); color: var(--green); }
+    .risk-elevated { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .risk-high { background: rgba(239,68,68,0.15); color: var(--red); }
+    .risk-critical { background: rgba(239,68,68,0.3); color: var(--red); }
+    .risk-admin { background: rgba(59,130,246,0.15); color: var(--blue); }
+
+    .session-status { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; }
+    .session-status span { color: var(--muted); display: block; margin-bottom: 3px; }
+    .session-status strong { color: var(--green); }
+
+    /* RIGHT: Attack Panel */
+    .attack-panel { display: flex; flex-direction: column; gap: 12px; }
+
+    .attack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .attack-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .attack-card h3 { font-size: 0.85rem; color: var(--cyan); margin-bottom: 6px; }
+    .attack-card p { font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+
+    /* Big one-click button */
+    .full-chain-card { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(139,92,246,0.15)); border: 1px solid rgba(239,68,68,0.4); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px; }
+    .full-chain-card .text h2 { font-size: 1.1rem; }
+    .full-chain-card .text p { color: var(--muted); font-size: 0.82rem; margin-top: 4px; }
+
+    button { padding: 10px 16px; border: none; border-radius: 8px; font-family: var(--sans); font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; color: #fff; width: 100%; }
+    button:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-red { background: var(--red); }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-blue { background: var(--blue); }
+    .btn-purple { background: var(--purple); }
+    .btn-green { background: var(--green); }
+    .btn-cyan { background: var(--cyan); color: #000; }
+    .btn-chain { background: linear-gradient(90deg, var(--red), var(--purple)); font-size: 1rem; padding: 14px 24px; min-width: 200px; }
+
+    /* Console */
+    .console-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .console-wrap h3 { font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; }
+    #console { background: #000; color: #22d3ee; font-family: var(--mono); font-size: 0.8rem; line-height: 1.6; padding: 14px; height: 260px; overflow-y: auto; border-radius: 6px; white-space: pre-wrap; }
+
+    /* Amount input */
+    .amount-row { display: flex; gap: 8px; align-items: center; }
+    .amount-row input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-family: var(--mono); font-size: 0.85rem; }
+    .amount-row input:focus { outline: none; border-color: var(--red); }
+
+    .refresh-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); width: auto; padding: 6px 12px; font-size: 0.75rem; }
+    .refresh-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .running { animation: pulse 1s infinite; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="header">
-      <h1>🥷 The Heist: Account Takeover Simulator</h1>
-      <p style="color: var(--text-muted)">Follow the steps below to simulate hacking a victim's account and stealing their money.</p>
+<div class="page-header">
+  <h1>🥷 SecureBank <span>Attacker</span> Console</h1>
+  <p>Account Takeover (ATO) Simulator — For Hackathon Demo Purposes Only</p>
+</div>
+
+<div class="main-grid">
+
+  <!-- LEFT COLUMN: Victim Picker -->
+  <div class="victim-panel">
+    <h2>🎯 Step 1: Select Target Account</h2>
+
+    <div class="hacker-info">
+      <span>Hacker Receiving Account</span>
+      <strong id="lblHackerAcc">Creating hacker account...</strong>
     </div>
 
-    <!-- Phase 1: Setup -->
-    <div class="panel">
-      <h2>Phase 1: Target Setup</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">First, we need to create the Hacker's receiving account, and then set up a Victim account loaded with funds.</p>
-      
-      <div class="step-box active" id="step1">
-        <div class="form-group" style="display:flex; gap:10px; margin-bottom: 10px;">
-          <div style="flex:1;">
-            <label>Target Username</label>
-            <input type="text" id="targetUser" value="prem">
-          </div>
-          <div style="flex:1;">
-            <label>Target Password (Stolen)</label>
-            <input type="password" id="targetPass" value="Prem123!">
-          </div>
-        </div>
-        
-        <div class="status-row">
-          <span>Hacker Account (Destination):</span> <span id="lblHackerAcc" class="status-badge">Not Created</span>
-        </div>
-        <div class="status-row">
-          <span>Victim Account (Target):</span> <span id="lblVictimInfo" class="status-badge">Not Created</span>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button onclick="setupHeist()">1. Generate Hacker & Victim Accounts</button>
-      </div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.8rem; color:var(--muted);">Live User List</span>
+      <button class="refresh-btn" onclick="refreshUsers()">⟳ Refresh</button>
     </div>
 
-    <!-- Phase 2: The Hack -->
-    <div class="panel">
-      <h2>Phase 2: Account Compromise (ATO)</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">The Hacker has stolen the Victim's password. We will now log into the Victim's account using an unrecognized device and IP address (from Russia/VPN).</p>
-      
-      <div class="step-box" id="step2">
-        <div class="status-row">
-          <span>Current Session:</span> <span id="lblSession" class="status-badge" style="color:var(--danger)">Logged Out</span>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button onclick="compromiseVictim()" class="warning">2. Log into Victim's Account</button>
-      </div>
+    <div class="users-list" id="usersList">
+      <div style="color:var(--muted); font-size:0.8rem; padding:20px; text-align:center;">Loading users...</div>
     </div>
 
-    <!-- Phase 3: Telemetry Injection -->
-    <div class="panel">
-      <h2>Phase 3: Bot Telemetry Injection</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">As the hacker, we are using an automated Python script to perform the transfer instantly. We inject 650 WPM typing speed and robotic mouse movements.</p>
-      
-      <div class="btn-group">
-        <button onclick="injectBotTelemetry()" class="warning">3. Inject Bot Telemetry</button>
-      </div>
-    </div>
-
-    <!-- Phase 4: The Heist -->
-    <div class="panel">
-      <h2>Phase 4: Drain the Account</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">Execute the transfer payload to send the victim's money to our hacker account. The AI should detect the anomalies and block this.</p>
-      
-      <div class="form-group">
-        <label>Transfer Amount (₹)</label>
-        <input type="number" id="transferAmount" value="4500">
-      </div>
-      
-      <div class="btn-group">
-        <button onclick="executeHeist()" class="danger">4. Steal Funds (Execute Transfer)</button>
-      </div>
-    </div>
-
-    <!-- Console Output -->
-    <div class="console-panel">
-      <div class="panel" style="padding: 0; border: none; background: transparent;">
-        <h2 style="color:var(--text-main); margin-bottom: 10px;">Live API Response Console</h2>
-        <div id="consoleOutput">System initialized. Awaiting Phase 1...</div>
-      </div>
+    <div class="session-status">
+      <span>Active Victim Session</span>
+      <strong id="lblSession">None — click a user above</strong>
     </div>
   </div>
 
-  <script>
-    const API_BASE = "http://127.0.0.1:5000/api";
+  <!-- RIGHT COLUMN: Attacks -->
+  <div class="attack-panel">
+
+    <!-- Big one-click chain button -->
+    <div class="full-chain-card">
+      <div class="text">
+        <h2>💥 Full Attack Chain — One Click</h2>
+        <p>Runs all 5 demo scenarios sequentially: normal transfer → bot attack → VPN phantom → Salami slicing → Admin review.</p>
+      </div>
+      <button class="btn-chain" id="btnChain" onclick="runFullChain()" style="white-space:nowrap;">⚡ Launch Full Attack</button>
+    </div>
+
+    <!-- Individual Attacks Grid -->
+    <div class="attack-grid">
+
+      <div class="attack-card">
+        <h3>📋 Scenario 1: Normal Transfer</h3>
+        <p>Simulates a legitimate human transfer of ₹500. Should <strong style="color:var(--green)">pass</strong> the AI checks.</p>
+        <div class="amount-row" style="margin-bottom:10px;">
+          <input type="number" id="amt1" value="500">
+          <span style="color:var(--muted); font-size:0.8rem; white-space:nowrap;">₹</span>
+        </div>
+        <button class="btn-green" onclick="attackNormal()">▶ Run Scenario 1</button>
+      </div>
+
+      <div class="attack-card">
+        <h3>🤖 Scenario 2: Bot Behavior</h3>
+        <p>Injects 650 WPM typing + straight-line mouse. Transfer should be <strong style="color:var(--red)">BLOCKED</strong> by ML Engine.</p>
+        <div class="amount-row" style="margin-bottom:10px;">
+          <input type="number" id="amt2" value="1500">
+          <span style="color:var(--muted); font-size:0.8rem; white-space:nowrap;">₹</span>
+        </div>
+        <button class="btn-red" onclick="attackBot()">▶ Run Scenario 2</button>
+      </div>
+
+      <div class="attack-card">
+        <h3>👻 Scenario 3: Phantom / VPN Attack</h3>
+        <p>Injects VPN anomaly + impossible travel, then attempts ₹9,500. Should be <strong style="color:var(--red)">BLOCKED</strong>.</p>
+        <div class="amount-row" style="margin-bottom:10px;">
+          <input type="number" id="amt3" value="9500">
+          <span style="color:var(--muted); font-size:0.8rem; white-space:nowrap;">₹</span>
+        </div>
+        <button class="btn-yellow" onclick="attackVPN()">▶ Run Scenario 3</button>
+      </div>
+
+      <div class="attack-card">
+        <h3>🔪 Scenario 4: Salami Slicing (C2)</h3>
+        <p>Marks device as compromised (C2 beacon), then tries a small ₹100 to evade detection. <strong style="color:var(--red)">BLOCKED</strong>.</p>
+        <div class="amount-row" style="margin-bottom:10px;">
+          <input type="number" id="amt4" value="100">
+          <span style="color:var(--muted); font-size:0.8rem; white-space:nowrap;">₹</span>
+        </div>
+        <button class="btn-purple" onclick="attackSalami()">▶ Run Scenario 4</button>
+      </div>
+
+      <div class="attack-card">
+        <h3>🕵️ Scenario 5: Admin Feedback Review</h3>
+        <p>After a blocked transaction, the admin logs in and marks it as a False Positive to trigger the ML retraining loop.</p>
+        <button class="btn-blue" onclick="attackAdminFeedback()">▶ Run Scenario 5</button>
+      </div>
+
+      <div class="attack-card">
+        <h3>🎯 Manual Drain Transfer</h3>
+        <p>Directly transfer any amount from the selected victim's account to the hacker's account.</p>
+        <div class="amount-row" style="margin-bottom:10px;">
+          <input type="number" id="amtDrain" value="4500">
+          <span style="color:var(--muted); font-size:0.8rem; white-space:nowrap;">₹</span>
+        </div>
+        <button class="btn-red" onclick="attackDrain()">💸 Drain Account</button>
+      </div>
+
+    </div>
+
+    <!-- Console -->
+    <div class="console-wrap">
+      <h3>
+        <span>📟 Live Attack Console</span>
+        <button onclick="clearConsole()" style="background:transparent; border:1px solid var(--border); color:var(--muted); width:auto; padding:4px 10px; font-size:0.7rem;">Clear</button>
+      </h3>
+      <div id="console">Attacker console initialized. Select a target from the left panel to begin...\n</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const BASE = "http://127.0.0.1:5000/api";
+  let hackerAccount = "";
+  let victimSession = { username: "", password: "" };
+  let lastBlockedTxnId = null;
+
+  // ===================== CONSOLE =====================
+  function log(msg, color = "#22d3ee") {
+    const c = document.getElementById("console");
+    const time = new Date().toLocaleTimeString();
+    c.innerHTML += `<span style="color:#475569">[${time}]</span> <span style="color:${color}">${msg}</span>\n`;
+    c.scrollTop = c.scrollHeight;
+  }
+  function logOk(m)  { log("✅ " + m, "#10b981"); }
+  function logErr(m) { log("🚨 " + m, "#ef4444"); }
+  function logInfo(m){ log("⚡ " + m, "#f59e0b"); }
+  function logBlocked(m) { log("🛡️  BLOCKED: " + m, "#ef4444"); }
+  function clearConsole() { document.getElementById("console").innerHTML = "Console cleared.\n"; }
+
+  // ===================== API =====================
+  async function api(path, method = "GET", body = null) {
+    const opts = { method, headers: { "Content-Type": "application/json" }, credentials: "include" };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(BASE + path, opts);
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  // ===================== INIT: Create Hacker Account =====================
+  async function init() {
+    log("Initializing hacker account...");
+    const num = Math.floor(Math.random() * 9000) + 1000;
+    const r = await api("/register", "POST", {
+      username: `hacker_${num}`, email: `hacker_${num}@darkweb.com`, password: "Hacker@123"
+    });
+    if (r.ok) {
+      hackerAccount = r.data.account_number;
+      document.getElementById("lblHackerAcc").textContent = hackerAccount;
+      logOk(`Hacker account ready: ${hackerAccount}`);
+    } else {
+      document.getElementById("lblHackerAcc").textContent = "Failed to create";
+      logErr("Could not create hacker account");
+    }
+    await refreshUsers();
+  }
+
+  // ===================== USER LIST =====================
+  async function refreshUsers() {
+    const r = await api("/admin/overview");
+    if (!r.ok) {
+      document.getElementById("usersList").innerHTML = `<div style="color:var(--muted); font-size:0.8rem; padding:10px;">Could not load users</div>`;
+      return;
+    }
+    const users = r.data.users.filter(u => u.username !== "admin");
+    if (users.length === 0) {
+      document.getElementById("usersList").innerHTML = `<div style="color:var(--muted); font-size:0.8rem; padding:10px;">No users found. Run a scenario to create test users.</div>`;
+      return;
+    }
+    document.getElementById("usersList").innerHTML = users.map(u => `
+      <div class="user-card" id="ucard_${u.id}" onclick="selectVictim(${u.id}, '${u.username}', '${u.risk_level}')">
+        <div class="uname">👤 ${u.username}</div>
+        <div class="uacc">ID: ${u.id}</div>
+        <div class="urisk risk-${u.risk_level || 'normal'}">${(u.risk_level || 'normal').toUpperCase()}</div>
+      </div>
+    `).join("");
+  }
+
+  async function selectVictim(userId, username, riskLevel) {
+    // Visually select the card
+    document.querySelectorAll(".user-card").forEach(c => c.classList.remove("selected"));
+    const card = document.getElementById(`ucard_${userId}`);
+    if (card) card.classList.add("selected");
+
+    log(`Targeting user: ${username} (risk: ${riskLevel})`);
     
-    // State variables
-    let hackerAccount = "";
-    let victimCreds = { username: "", password: "" };
-
-    function logToConsole(title, data, isError = false) {
-      const consoleEl = document.getElementById('consoleOutput');
-      const time = new Date().toLocaleTimeString();
-      let color = isError ? 'var(--danger)' : '#60a5fa';
-      
-      let out = `\n[${time}] <span style="color:${color}; font-weight:bold;">[${title}]</span>\n`;
-      if (typeof data === 'object') {
-        out += JSON.stringify(data, null, 2);
-      } else {
-        out += data;
+    // For known demo users the password pattern is known
+    // We try common passwords used during registration in hack.html/demo.py
+    const passwordsToTry = ["SecurePassword123", "VipPassword123!", "VictimPass123", "prem@123", "Prem123!", "password", "pass123"];
+    
+    let loggedIn = false;
+    for (const pw of passwordsToTry) {
+      const r = await api("/login", "POST", {
+        username, password: pw, device_id: "kali-linux-unknown", ip_address: "185.120.44.1"
+      });
+      if (r.ok) {
+        victimSession = { username, password: pw };
+        document.getElementById("lblSession").textContent = `Hijacked: ${username}`;
+        logOk(`Session hijacked as ${username} using password: ${pw}`);
+        logInfo("New device login event logged on backend!");
+        loggedIn = true;
+        break;
       }
-      
-      consoleEl.innerHTML += out + "\n";
-      consoleEl.scrollTop = consoleEl.scrollHeight;
     }
-
-    async function api(path, method = 'GET', body = null) {
-      const opts = { method, headers: { 'Content-Type': 'application/json' } };
-      if (body) opts.body = JSON.stringify(body);
-      const res = await fetch(API_BASE + path, opts);
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { throw new Error(data.error || JSON.stringify(data)); }
-      return data;
-    }
-
-    async function setupHeist() {
-      try {
-        logToConsole("SETUP", "Creating Hacker Account...");
-        const hNum = Math.floor(Math.random() * 9000) + 1000;
-        const hReg = await api('/register', 'POST', { username: `hacker_${hNum}`, email: `hacker_${hNum}@darkweb.com`, password: "HackerPassword1!" });
-        hackerAccount = hReg.account_number;
-        document.getElementById('lblHackerAcc').innerText = hackerAccount;
-        document.getElementById('lblHackerAcc').style.color = "var(--danger)";
-        
-        logToConsole("SETUP", "Setting up Victim Account...");
-        victimCreds.username = document.getElementById("targetUser").value;
-        victimCreds.password = document.getElementById("targetPass").value;
-        
-        // Try to register. If it fails (already exists), that's fine, we still have the creds.
-        try {
-          await api('/register', 'POST', { username: victimCreds.username, email: `${victimCreds.username}@gmail.com`, password: victimCreds.password });
-        } catch(e) {
-          logToConsole("INFO", `Predefined victim '${victimCreds.username}' already exists, using existing account.`);
-        }
-        
-        document.getElementById('lblVictimInfo').innerText = `${victimCreds.username} (Predefined Target)`;
-        
-        logToConsole("SETUP COMPLETE", "Both accounts created successfully. The Hacker's destination account is ready.");
-        document.getElementById('step1').classList.remove('active');
-        document.getElementById('step2').classList.add('active');
-        
-      } catch (e) { logToConsole("SETUP ERROR", e.message, true); }
-    }
-
-    async function compromiseVictim() {
-      if (!victimCreds.username) {
-        alert("Please run Phase 1 first."); return;
-      }
-      
-      try {
-        logToConsole("ATO ATTACK", `Logging in as ${victimCreds.username} using stolen credentials from a new device in Russia...`);
-        
-        // This simulates the hacker logging in. 
-        // The backend should log 'new_device_login' and track the suspicious IP.
-        const loginRes = await api('/login', 'POST', {
-          username: victimCreds.username,
-          password: victimCreds.password,
-          device_id: "kali-linux-unknown-browser",
-          ip_address: "185.120.44.1" // Suspicious VPN IP
-        });
-        
-        document.getElementById('lblSession').innerText = `Logged in as Victim (${victimCreds.username})`;
-        document.getElementById('lblSession').style.color = "var(--warning)";
-        logToConsole("ATO SUCCESS", "Successfully hijacked the Victim's session!");
-        
-      } catch (e) { logToConsole("LOGIN ERROR", e.message, true); }
-    }
-
-    async function injectBotTelemetry() {
-      try {
-        logToConsole("TELEMETRY", "Injecting bot telemetry: 650 WPM, 2 point robotic mouse movement...");
-        
-        const payload = {
-          typing_speed_wpm: 650,
-          mouse_movements: [
-            {x: 0, y: 0, time: 0},
-            {x: 500, y: 500, time: 10} // Impossible straight line
-          ]
-        };
-        
-        const res = await api('/telemetry/behavior', 'POST', payload);
-        logToConsole("TELEMETRY RESPONSE", res);
-      } catch (e) { logToConsole("TELEMETRY ERROR", e.message, true); }
-    }
-
-    async function executeHeist() {
-      if (!hackerAccount) {
-        alert("Please run Phase 1 to generate the hacker's receiving account."); return;
-      }
-      
-      const amount = document.getElementById('transferAmount').value;
-      logToConsole("THE HEIST", `Attempting to drain ₹${amount} to Hacker Account (${hackerAccount})...`);
-      
-      try {
-        const res = await fetch(`${API_BASE}/transfer`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to_account: hackerAccount, amount: amount })
-        });
-        const data = await res.json();
-        
-        if (data.flagged || !res.ok) {
-          logToConsole("🛡️ BLOCKED BY AI ENGINE", data, true);
+    if (!loggedIn) {
+      // Ask for password
+      const pw = prompt(`Could not auto-crack password for "${username}".\nEnter the password manually:`);
+      if (pw) {
+        const r = await api("/login", "POST", { username, password: pw, device_id: "kali-linux-unknown", ip_address: "185.120.44.1" });
+        if (r.ok) {
+          victimSession = { username, password: pw };
+          document.getElementById("lblSession").textContent = `Hijacked: ${username}`;
+          logOk(`Session hijacked as ${username}`);
         } else {
-          logToConsole("💀 FATAL: HEIST SUCCESSFUL", data);
+          logErr(`Login failed for ${username}: ${r.data.error}`);
+          document.getElementById("lblSession").textContent = "Login failed";
         }
-      } catch (e) {
-        logToConsole("NETWORK ERROR", e.message, true);
       }
     }
-  </script>
+  }
+
+  function requireVictim() {
+    if (!victimSession.username) {
+      logErr("No victim selected! Click a user card on the left first.");
+      return false;
+    }
+    if (!hackerAccount) {
+      logErr("No hacker account found.");
+      return false;
+    }
+    return true;
+  }
+
+  // ===================== ATTACKS =====================
+  async function attackNormal() {
+    if (!requireVictim()) return;
+    const amount = parseFloat(document.getElementById("amt1").value);
+    logInfo(`[Scenario 1] Normal human transfer of ₹${amount} → ${hackerAccount}`);
+    const r = await api("/transfer", "POST", { to_account: hackerAccount, amount });
+    if (r.ok && !r.data.flagged) {
+      logOk(`Transfer SUCCESSFUL. TxID: ${r.data.transaction_id} | Score: ${r.data.fraud_score?.toFixed(1)}`);
+    } else {
+      logBlocked(r.data.error || r.data.flag_reason);
+    }
+  }
+
+  async function attackBot() {
+    if (!requireVictim()) return;
+    const amount = parseFloat(document.getElementById("amt2").value);
+    logInfo("[Scenario 2] Injecting bot telemetry: 650 WPM + robotic mouse...");
+    await api("/telemetry/behavior", "POST", {
+      typing_speed_wpm: 650.0,
+      mouse_movements: [{x:10,y:10,time:0},{x:400,y:600,time:10}]
+    });
+    logInfo(`Attempting fraudulent transfer of ₹${amount}...`);
+    const r = await api("/transfer", "POST", { to_account: hackerAccount, amount });
+    if (r.data.flagged || !r.ok) {
+      logBlocked(r.data.error || r.data.flag_reason);
+      lastBlockedTxnId = r.data.transaction_id;
+      log(`   → Blocked TxID saved for Scenario 5: #${lastBlockedTxnId}`, "#f59e0b");
+    } else {
+      log("⚠️ Transfer went through (bot detection may need tuning)", "#f59e0b");
+    }
+  }
+
+  async function attackVPN() {
+    if (!requireVictim()) return;
+    const amount = parseFloat(document.getElementById("amt3").value);
+    logInfo("[Scenario 3] Injecting VPN anomaly + impossible travel threat intel...");
+    await api("/security/simulate", "POST", { event_type: "vpn_anomaly", device_id: "kali-linux-unknown" });
+    await api("/security/simulate", "POST", { event_type: "impossible_travel", device_id: "kali-linux-unknown" });
+    logInfo(`Attempting large transfer of ₹${amount} after geo anomaly...`);
+    const r = await api("/transfer", "POST", { to_account: hackerAccount, amount });
+    if (r.data.flagged || !r.ok) {
+      logBlocked(r.data.error || r.data.flag_reason);
+    } else {
+      log("⚠️ Transfer went through!", "#f59e0b");
+    }
+  }
+
+  async function attackSalami() {
+    if (!requireVictim()) return;
+    const amount = parseFloat(document.getElementById("amt4").value);
+    logInfo("[Scenario 4] Salami Slicing — injecting C2 beacon / device_compromised event...");
+    await api("/security/simulate", "POST", { event_type: "device_compromised", device_id: "kali-linux-unknown" });
+    logInfo(`Attempting small evasive transfer of ₹${amount}...`);
+    const r = await api("/transfer", "POST", { to_account: hackerAccount, amount });
+    if (r.data.flagged || !r.ok) {
+      logBlocked(r.data.error || r.data.flag_reason);
+    } else {
+      log("⚠️ Transfer went through (small amount evaded)!", "#f59e0b");
+    }
+  }
+
+  async function attackAdminFeedback() {
+    if (!lastBlockedTxnId) {
+      logErr("No blocked transaction found. Run Scenario 2 first to generate a blocked transaction.");
+      return;
+    }
+    logInfo(`[Scenario 5] Admin logging in to review blocked TxID #${lastBlockedTxnId}...`);
+    await api("/login", "POST", { username: "admin", password: "pass", device_id: "admin-secure-terminal" });
+    logInfo("Admin marking transaction as False Positive to trigger ML retraining...");
+    const r = await api("/admin/feedback", "POST", { transaction_id: lastBlockedTxnId, feedback: "false_positive" });
+    if (r.ok) {
+      logOk(`Admin feedback recorded: ${r.data.message}`);
+    } else {
+      logErr(`Feedback failed: ${r.data.error}`);
+    }
+    // Re-login as victim after admin action
+    if (victimSession.username) {
+      await api("/login", "POST", { username: victimSession.username, password: victimSession.password, device_id: "kali-linux-unknown" });
+    }
+  }
+
+  async function attackDrain() {
+    if (!requireVictim()) return;
+    const amount = parseFloat(document.getElementById("amtDrain").value);
+    logInfo(`[Manual Drain] Transferring ₹${amount} from ${victimSession.username} → Hacker (${hackerAccount})...`);
+    const r = await api("/transfer", "POST", { to_account: hackerAccount, amount });
+    if (r.ok && !r.data.flagged) {
+      logOk(`DRAIN SUCCESSFUL! ₹${amount} transferred. TxID: ${r.data.transaction_id} | Fraud Score: ${r.data.fraud_score?.toFixed(1)}`);
+    } else {
+      logBlocked(r.data.error || r.data.flag_reason);
+    }
+  }
+
+  // ===================== FULL CHAIN =====================
+  async function runFullChain() {
+    if (!victimSession.username) {
+      logErr("Select a target user first from the left panel!");
+      return;
+    }
+    const btn = document.getElementById("btnChain");
+    btn.disabled = true;
+    btn.textContent = "⏳ Running...";
+    btn.classList.add("running");
+
+    log("═══════════════════════════════════════", "#8b5cf6");
+    log("  🚀 FULL ATTACK CHAIN INITIATED", "#8b5cf6");
+    log("═══════════════════════════════════════", "#8b5cf6");
+
+    await sleep(500);
+    await attackNormal();
+    await sleep(800);
+    await attackBot();
+    await sleep(800);
+    await attackVPN();
+    await sleep(800);
+    await attackSalami();
+    await sleep(800);
+    await attackAdminFeedback();
+    await sleep(500);
+
+    log("═══════════════════════════════════════", "#8b5cf6");
+    log("  ✅ ALL SCENARIOS COMPLETE", "#8b5cf6");
+    log("  Check admin.html to see all events!", "#8b5cf6");
+    log("═══════════════════════════════════════", "#8b5cf6");
+
+    btn.disabled = false;
+    btn.textContent = "⚡ Launch Full Attack";
+    btn.classList.remove("running");
+    await refreshUsers();
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ===================== AUTO REFRESH =====================
+  setInterval(refreshUsers, 8000);
+
+  // ===================== INIT =====================
+  init();
+</script>
 </body>
 </html>
