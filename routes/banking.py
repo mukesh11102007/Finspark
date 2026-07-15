@@ -51,6 +51,27 @@ def transfer():
         return jsonify({"error": "insufficient funds"}), 400
 
     # ========================================================
+    # SELF TRANSFER BYPASS (No risk scoring for own account)
+    # ========================================================
+    is_self_transfer = data.get("self_transfer", False) or (from_acc["account_number"] == to_account)
+    import json
+    
+    if is_self_transfer:
+        # Self-transfer: credit and debit cancel out — just log the transaction
+        cur = db.execute(
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, ai_fraud_score, score_features) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (from_acc["account_number"], to_account, amount, now, "success", 0.0, json.dumps(["Self-transfer: no risk applied"])),
+        )
+        db.commit()
+        return jsonify({
+            "message": "self transfer complete",
+            "transaction_id": cur.lastrowid,
+            "flagged": False,
+            "flag_reason": None,
+            "fraud_score": 0.0
+        })
+
+    # ========================================================
     # CORRELATION ENGINE (Proactive Prevention Loop)
     # ========================================================
     risk_score = 0

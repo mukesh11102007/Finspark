@@ -23,6 +23,10 @@ def close_db_context(exception):
 def index():
     return send_from_directory(".", "index.html")
 
+@app.route("/admin")
+def admin():
+    return send_from_directory(".", "admin.html")
+
 if __name__ == "__main__":
     init_db()
     # Run with adhoc SSL for HTTPS to encrypt traffic
