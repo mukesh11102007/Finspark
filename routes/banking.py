@@ -97,11 +97,72 @@ def transfer():
         db.commit()
         return jsonify({"error": "insufficient funds", "reason": ai_exp}), 400
 
-    # ML Model Integration
-    flagged = False
-    flag_reason = None
-    fraud_prob = 0.0
+    # ========================================================
+    # SELF TRANSFER BYPASS (No risk scoring for own account)
+    # ========================================================
+    is_self_transfer = data.get("self_transfer", False) or (from_acc["account_number"] == to_account)
+    import json
     
+    if is_self_transfer:
+        # Self-transfer: credit the amount directly to the account balance (no deduction)
+        db.execute("UPDATE accounts SET balance = balance + ? WHERE id = ?", (amount, from_acc["id"]))
+        cur = db.execute(
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, ai_fraud_score, score_features) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (from_acc["account_number"], to_account, amount, now, "success", 0.0, json.dumps(["Self-transfer: no risk applied"])),
+        )
+        db.commit()
+        return jsonify({
+            "message": "self transfer complete",
+            "transaction_id": cur.lastrowid,
+            "flagged": False,
+            "flag_reason": None,
+            "fraud_score": 0.0
+        })
+
+    # ========================================================
+    # CORRELATION ENGINE & ML HYBRID GUARD
+    # ========================================================
+    risk_score = 0
+    features = []
+    
+    # 1. Base User Risk
+    user_rec = db.execute("SELECT risk_level FROM users WHERE id = ?", (user["id"],)).fetchone()
+    base_risk = user_rec["risk_level"] if user_rec else "normal"
+    if base_risk == "high":
+        risk_score += 40
+        features.append("High base user risk")
+    elif base_risk == "elevated":
+        risk_score += 20
+        features.append("Elevated base user risk")
+        
+    # 2. Transaction Amount Heuristic
+    if amount > 50000:
+        risk_score += 30
+        features.append(f"Unusually large transfer (₹{amount})")
+    elif amount > 10000:
+        risk_score += 15
+        features.append("Large transfer amount")
+        
+    # 3. Cyber Telemetry Correlation (Recent events in last hour)
+    recent_events = db.execute(
+        "SELECT event_type, severity FROM security_events WHERE user_id = ? AND timestamp > datetime('now', '-1 hour')", 
+        (user["id"],)
+    ).fetchall()
+    
+    for ev in recent_events:
+        if ev["severity"] == "critical":
+            risk_score += 50
+            features.append(f"Critical event: {ev['event_type']}")
+        elif ev["severity"] == "high":
+            risk_score += 30
+            features.append(f"High risk event: {ev['event_type']}")
+        elif ev["severity"] == "medium":
+            risk_score += 15
+            features.append(f"Medium risk event: {ev['event_type']}")
+            
+    risk_score = min(100.0, float(risk_score))
+    
+    # 4. ML Random Forest Model Classifier
     import joblib
     import os
     import pandas as pd
@@ -117,6 +178,7 @@ def transfer():
 
     model_path = "fraud_model.joblib"
     features_path = "model_features.joblib"
+    fraud_prob = 0.0
     
     if os.path.exists(model_path) and os.path.exists(features_path):
         fraud_model = joblib.load(model_path)
@@ -134,6 +196,7 @@ def transfer():
         last_event = db.execute("SELECT event_type FROM security_events WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1", (user["id"],)).fetchone()
         if last_event and last_event["event_type"] in ["vpn_anomaly", "impossible_travel"]:
             txn_lat, txn_lon = home_lat + 20.0, home_lon + 20.0 # Far away
+            features.append("Geographic travel anomaly detected")
         else:
             txn_lat, txn_lon = home_lat + 0.01, home_lon + 0.01 # Close by
             
@@ -143,10 +206,10 @@ def transfer():
         recent_anomaly = db.execute("SELECT 1 FROM security_events WHERE user_id = ? AND event_type='behavioral_anomaly' ORDER BY timestamp DESC LIMIT 1", (user["id"],)).fetchone()
         if recent_anomaly:
             mouse_dist, typing_wpm, mouse_speed = 100.0, 600.0, 30.0 # Bot
+            features.append("Robotic typing and mouse movements flagged")
         else:
             mouse_dist, typing_wpm, mouse_speed = 2000.0, 60.0, 2.0  # Human
             
-        # Adjust features based on threat level of sender and receiver
         login_attempts = user_dict.get("failed_login_attempts") or 0
         device_risk_score = user_dict.get("device_risk_score") or 0.0
         if sender_threat:
@@ -182,29 +245,31 @@ def transfer():
         
         # Ensure exact column order
         input_df = pd.DataFrame([feature_dict])[model_features]
-        
         fraud_prob = fraud_model.predict_proba(input_df)[0][1]
         
-    # Flag if fraud_prob > 0.60, or if either sender or receiver is under active threat
-    if fraud_prob > 0.60 or sender_threat or receiver_threat:
-        flagged = True
-        
-        # Determine explanation context
+    final_fraud_score = max(risk_score, fraud_prob * 100)
+
+    # Flag if fraud_prob > 0.60, or if risk_score >= 70, or if either sender or receiver is under active threat
+    if fraud_prob > 0.60 or risk_score >= 70 or sender_threat or receiver_threat:
         if sender_threat:
             core_reason = f"the sender has active security threats (risk level: {user['risk_level']})"
         elif receiver_threat:
             core_reason = f"the recipient's account has high risk indicators (risk level: {receiver['risk_level']})"
+        elif risk_score >= 70:
+            core_reason = "High Session Risk detected. Transaction blocked pending step-up verification."
         else:
             core_reason = f"the anti-fraud model detected suspicious transaction patterns resembling ML fraud score of {fraud_prob*100:.1f}%"
             
-        # Generate AI explanation
+        # Add to features list
+        if fraud_prob > 0.60:
+            features.append(f"AI ML flagged transfer ({fraud_prob*100:.1f}%)")
+            
         ai_exp = generate_ai_explanation(core_reason)
         flag_reason = f"AI Blocked: {ai_exp}"
         
-        # Insert flagged/blocked transaction as FAILED (amount NOT deducted)
         cur = db.execute(
-            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, flag_reason, ai_fraud_score) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
-            (from_acc["account_number"], to_account, amount, now, "failed", flag_reason, fraud_prob),
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, flag_reason, ai_fraud_score, score_features) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)",
+            (from_acc["account_number"], to_account, amount, now, "blocked", flag_reason, final_fraud_score, json.dumps(features)),
         )
         txn_id = cur.lastrowid
         db.commit()
@@ -213,15 +278,16 @@ def transfer():
             "error": flag_reason,
             "flagged": True,
             "flag_reason": flag_reason,
-            "transaction_id": txn_id
+            "transaction_id": txn_id,
+            "fraud_score": final_fraud_score
         }), 400
     else:
         # Perform actual balance transfer ONLY if the transaction passed security checks
         db.execute("UPDATE accounts SET balance = balance - ? WHERE id = ?", (amount, from_acc["id"]))
         db.execute("UPDATE accounts SET balance = balance + ? WHERE id = ?", (amount, to_acc["id"]))
         cur = db.execute(
-            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, ai_fraud_score) VALUES (?, ?, ?, ?, ?, 0, ?)",
-            (from_acc["account_number"], to_account, amount, now, "success", fraud_prob),
+            "INSERT INTO transactions (from_account, to_account, amount, timestamp, status, flagged, ai_fraud_score, score_features) VALUES (?, ?, ?, ?, ?, 0, ?, ?)",
+            (from_acc["account_number"], to_account, amount, now, "success", final_fraud_score, json.dumps(features)),
         )
         txn_id = cur.lastrowid
         db.commit()
@@ -231,6 +297,7 @@ def transfer():
             "transaction_id": txn_id,
             "flagged": False,
             "flag_reason": None,
+            "fraud_score": final_fraud_score
         })
 
 
@@ -293,3 +360,22 @@ def admin_reset():
     db.commit()
     
     return jsonify({"message": "All records cleared and demo reset successfully."})
+
+@banking_bp.route("/api/admin/feedback", methods=["POST"])
+def admin_feedback():
+    user = require_login()
+    if not user or user["username"] != "admin":
+        return jsonify({"error": "unauthorized"}), 403
+        
+    data = request.get_json(force=True)
+    txn_id = data.get("transaction_id")
+    feedback = data.get("feedback") # 'true_positive' or 'false_positive'
+    
+    if feedback not in ('true_positive', 'false_positive'):
+        return jsonify({"error": "invalid feedback"}), 400
+        
+    db = get_db()
+    db.execute("UPDATE transactions SET feedback = ? WHERE id = ?", (feedback, txn_id))
+    db.commit()
+    
+    return jsonify({"message": f"Feedback '{feedback}' recorded for ML retraining loop."})
