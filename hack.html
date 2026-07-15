@@ -3,151 +3,243 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SecureBank | Account Takeover (ATO) Simulator</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Advanced Persistent Threat Framework | SecureBank</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     :root {
-      --bg-color: #0f172a; --panel-bg: #1e293b; --border-color: #334155;
-      --text-main: #f8fafc; --text-muted: #94a3b8;
-      --accent: #10b981; --accent-hover: #059669;
-      --danger: #ef4444; --danger-hover: #dc2626;
-      --warning: #f59e0b;
-      --font-mono: 'Fira Code', monospace; --font-sans: 'Inter', sans-serif;
+      --bg-base: #0d1117;
+      --bg-panel: #161b22;
+      --border-muted: #30363d;
+      --text-main: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent-blue: #58a6ff;
+      --accent-blue-hover: #1f6feb;
+      --accent-red: #f85149;
+      --accent-green: #3fb950;
+      --font-mono: 'Fira Code', monospace;
+      --font-sans: 'Inter', sans-serif;
     }
+    
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 20px; font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-main); }
-    h1, h2, h3 { margin-top: 0; }
-    .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .header { grid-column: 1 / -1; text-align: center; padding: 20px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; }
-    .panel { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; }
-    .panel h2 { font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; color: var(--warning); }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;}
-    input[type="text"], input[type="number"], input[type="password"] { width: 100%; padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-family: var(--font-mono); font-size: 0.9rem; }
-    input:focus { outline: none; border-color: var(--accent); }
-    .btn-group { display: flex; gap: 10px; margin-top: auto; padding-top: 15px;}
-    button { padding: 12px 15px; border: none; border-radius: 4px; font-family: var(--font-sans); font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; transition: background 0.2s; flex: 1; }
-    button:hover { background: var(--accent-hover); }
-    button.danger { background: var(--danger); }
-    button.danger:hover { background: var(--danger-hover); }
-    button.warning { background: var(--warning); color: #000; }
-    .console-panel { grid-column: 1 / -1; }
-    #consoleOutput { background: #000; color: #34d399; font-family: var(--font-mono); padding: 15px; height: 300px; overflow-y: auto; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; }
-    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; background: #334155; }
-    .status-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; border-bottom: 1px dashed var(--border-color); padding-bottom: 5px; }
-    .step-box { border-left: 4px solid var(--border-color); padding-left: 15px; margin-bottom: 20px;}
-    .step-box.active { border-left-color: var(--accent); }
+    
+    body { 
+      margin: 0; padding: 0; 
+      font-family: var(--font-sans); 
+      background-color: var(--bg-base); 
+      color: var(--text-main); 
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    /* Topbar */
+    .topbar {
+      height: 50px; background: var(--bg-panel); border-bottom: 1px solid var(--border-muted);
+      display: flex; align-items: center; padding: 0 20px; justify-content: space-between;
+    }
+    .topbar-title {
+      font-family: var(--font-mono); font-weight: 700; color: var(--accent-blue);
+      display: flex; align-items: center; gap: 10px; font-size: 14px;
+    }
+    .topbar-status {
+      font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+    
+    /* Main Layout */
+    .workspace {
+      display: flex; flex: 1; height: calc(100vh - 50px);
+    }
+    
+    /* Sidebar (Controls) */
+    .sidebar {
+      width: 400px; background: var(--bg-base); border-right: 1px solid var(--border-muted);
+      display: flex; flex-direction: column; overflow-y: auto; padding: 20px;
+    }
+    
+    .section-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
+      font-weight: 600; margin-bottom: 15px; border-bottom: 1px solid var(--border-muted); padding-bottom: 5px;
+    }
+    
+    .module-card {
+      background: var(--bg-panel); border: 1px solid var(--border-muted); border-radius: 6px;
+      padding: 15px; margin-bottom: 20px;
+    }
+    
+    .form-group { margin-bottom: 12px; }
+    label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+    input[type="text"], input[type="number"] { 
+      width: 100%; padding: 8px 12px; background: var(--bg-base); border: 1px solid var(--border-muted); 
+      color: var(--text-main); border-radius: 4px; font-family: var(--font-mono); font-size: 13px; 
+      transition: border-color 0.2s;
+    }
+    input:focus { outline: none; border-color: var(--accent-blue); }
+    
+    button {
+      width: 100%; padding: 10px; background: var(--bg-base); border: 1px solid var(--border-muted);
+      color: var(--text-main); border-radius: 4px; font-family: var(--font-sans); font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;
+    }
+    button:hover { background: var(--border-muted); color: #fff; }
+    button.primary { background: rgba(88, 166, 255, 0.1); border-color: var(--accent-blue); color: var(--accent-blue); }
+    button.primary:hover { background: var(--accent-blue); color: #fff; }
+    button.danger { background: rgba(248, 81, 73, 0.1); border-color: var(--accent-red); color: var(--accent-red); }
+    button.danger:hover { background: var(--accent-red); color: #fff; }
+    
+    .status-row { display: flex; justify-content: space-between; font-size: 12px; font-family: var(--font-mono); margin-bottom: 8px; }
+    .val-green { color: var(--accent-green); }
+    .val-red { color: var(--accent-red); }
+    
+    /* Terminal (Right Pane) */
+    .terminal-pane {
+      flex: 1; background: #000; padding: 20px; overflow-y: auto;
+      font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: #a5d6ff;
+    }
+    .term-header { color: #8b949e; margin-bottom: 20px; white-space: pre; }
+    .log-line { margin-bottom: 4px; word-wrap: break-word; }
+    .log-module { color: #79c0ff; font-weight: bold; }
+    .log-error { color: #ff7b72; }
+    .log-success { color: #7ee787; }
+    .log-data { color: #d2a8ff; padding-left: 20px; white-space: pre-wrap; font-size: 12px; }
+    
+    /* Loading Overlay */
+    #loadingOverlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(13, 17, 23, 0.9); z-index: 9999; backdrop-filter: blur(5px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    #loadingOverlay.active { opacity: 1; pointer-events: all; }
+    
+    .loader-ring {
+      width: 50px; height: 50px; border: 3px solid rgba(88, 166, 255, 0.2);
+      border-top-color: var(--accent-blue); border-radius: 50%;
+      animation: spin 1s linear infinite; margin-bottom: 20px;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    
+    .loading-text { font-family: var(--font-mono); color: var(--accent-blue); font-size: 14px; margin-bottom: 5px; }
+    .loading-subtext { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; }
+
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="header">
-      <h1>🥷 The Heist: Account Takeover Simulator</h1>
-      <p style="color: var(--text-muted)">Follow the steps below to simulate hacking a victim's account and stealing their money.</p>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay">
+    <div class="loader-ring"></div>
+    <div class="loading-text">EXECUTING PAYLOAD</div>
+    <div class="loading-subtext" id="loadingSubtext">Establishing encrypted tunnel...</div>
+  </div>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-title">
+      <i data-lucide="shield-alert" width="18"></i> APT EXPLOIT FRAMEWORK // SECUREBANK
     </div>
-
-    <!-- Phase 1: Setup -->
-    <div class="panel">
-      <h2>Phase 1: Target Setup</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">First, we need to create the Hacker's receiving account, and then set up a Victim account loaded with funds.</p>
-      
-      <div class="step-box active" id="step1">
-        <div class="form-group" style="display:flex; gap:10px; margin-bottom: 10px;">
-          <div style="flex:1;">
-            <label>Target Username</label>
-            <input type="text" id="targetUser" value="prem">
-          </div>
-          <div style="flex:1;">
-            <label>Target Password (Stolen)</label>
-            <input type="password" id="targetPass" value="Prem123!">
-          </div>
-        </div>
-        
-        <div class="status-row">
-          <span>Hacker Account (Destination):</span> <span id="lblHackerAcc" class="status-badge">Not Created</span>
-        </div>
-        <div class="status-row">
-          <span>Victim Account (Target):</span> <span id="lblVictimInfo" class="status-badge">Not Created</span>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button onclick="setupHeist()">1. Generate Hacker & Victim Accounts</button>
-      </div>
+    <div class="topbar-status">
+      <div class="status-dot"></div> ENGINE ONLINE
     </div>
+  </div>
 
-    <!-- Phase 2: The Hack -->
-    <div class="panel">
-      <h2>Phase 2: Account Compromise (ATO)</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">The Hacker has stolen the Victim's password. We will now log into the Victim's account using an unrecognized device and IP address (from Russia/VPN).</p>
+  <div class="workspace">
+    <!-- Left Sidebar: Controls -->
+    <div class="sidebar">
       
-      <div class="step-box" id="step2">
-        <div class="status-row">
-          <span>Current Session:</span> <span id="lblSession" class="status-badge" style="color:var(--danger)">Logged Out</span>
+      <div class="section-title">01. Initialization</div>
+      <div class="module-card">
+        <div class="form-group">
+          <label>Target Identity (Username)</label>
+          <input type="text" id="targetUser" value="user_1234">
+        </div>
+        <button onclick="setupHeist()" class="primary"><i data-lucide="user-plus" width="16"></i> Set Target & Drop Mule</button>
+        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border-muted);">
+          <div class="status-row"><span>Mule Account:</span><span id="lblHackerAcc" class="val-red">PENDING</span></div>
+          <div class="status-row"><span>Auth Bypass:</span><span class="val-green">READY</span></div>
         </div>
       </div>
 
-      <div class="btn-group">
-        <button onclick="compromiseVictim()" class="warning">2. Log into Victim's Account</button>
+      <div class="section-title">02. Session Hijack</div>
+      <div class="module-card">
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 0;">Bypasses authentication using <code>HACKER_BYPASS</code> backdoor in API.</p>
+        <button onclick="compromiseVictim()" class="primary"><i data-lucide="key" width="16"></i> Execute Login Exploit</button>
+        <div style="margin-top: 15px;">
+          <div class="status-row"><span>Session:</span><span id="lblSession" class="val-red">NONE</span></div>
+        </div>
       </div>
+
+      <div class="section-title">03. Threat Telemetry</div>
+      <div class="module-card">
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 0;">Inject network anomalies to test ML correlation.</p>
+        <button onclick="injectTelemetry('vpn')"><i data-lucide="globe" width="16"></i> Inject VPN (Phantom Attack)</button>
+        <button onclick="injectTelemetry('c2')"><i data-lucide="cpu" width="16"></i> Inject C2 Beacon (Salami)</button>
+        <button onclick="injectTelemetry('bot')"><i data-lucide="bot" width="16"></i> Inject Bot Telemetry</button>
+      </div>
+
+      <div class="section-title">04. Execution</div>
+      <div class="module-card">
+        <div class="form-group">
+          <label>Payload Amount (₹)</label>
+          <input type="number" id="transferAmount" value="9500">
+        </div>
+        <button onclick="executeHeist()" class="danger"><i data-lucide="terminal" width="16"></i> Execute Transfer Exploit</button>
+      </div>
+
     </div>
 
-    <!-- Phase 3: Telemetry Injection -->
-    <div class="panel">
-      <h2>Phase 3: Bot Telemetry Injection</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">As the hacker, we are using an automated Python script to perform the transfer instantly. We inject 650 WPM typing speed and robotic mouse movements.</p>
-      
-      <div class="btn-group">
-        <button onclick="injectBotTelemetry()" class="warning">3. Inject Bot Telemetry</button>
-      </div>
-    </div>
-
-    <!-- Phase 4: The Heist -->
-    <div class="panel">
-      <h2>Phase 4: Drain the Account</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted)">Execute the transfer payload to send the victim's money to our hacker account. The AI should detect the anomalies and block this.</p>
-      
-      <div class="form-group">
-        <label>Transfer Amount (₹)</label>
-        <input type="number" id="transferAmount" value="4500">
-      </div>
-      
-      <div class="btn-group">
-        <button onclick="executeHeist()" class="danger">4. Steal Funds (Execute Transfer)</button>
-      </div>
-    </div>
-
-    <!-- Console Output -->
-    <div class="console-panel">
-      <div class="panel" style="padding: 0; border: none; background: transparent;">
-        <h2 style="color:var(--text-main); margin-bottom: 10px;">Live API Response Console</h2>
-        <div id="consoleOutput">System initialized. Awaiting Phase 1...</div>
+    <!-- Right Pane: Terminal -->
+    <div class="terminal-pane" id="terminal">
+      <div class="term-header">
+     ___  ___ _____   __   __   __
+    / _ \/ _ \_   _|__\ \ / /_ _\ \ 
+   |  _/  _/  | |_____\ V /  _` |> >
+   |_| |_|    |_|      \_/ \__,_/_/ 
+   
+   SecureBank Penetration Testing Toolkit v2.0.4
+   Copyright (c) Advanced Threat Research Group.
+   
+   [*] Initializing subroutines... OK
+   [*] Loaded HACKER_BYPASS auth module... OK
+   [*] Awaiting target parameters...
       </div>
     </div>
   </div>
 
   <script>
+    lucide.createIcons();
     const API_BASE = "http://127.0.0.1:5000/api";
     
-    // State variables
     let hackerAccount = "";
-    let victimCreds = { username: "", password: "" };
+    let victimUser = "";
+    const HARDCODED_PASS = "HACKER_BYPASS";
 
-    function logToConsole(title, data, isError = false) {
-      const consoleEl = document.getElementById('consoleOutput');
-      const time = new Date().toLocaleTimeString();
-      let color = isError ? 'var(--danger)' : '#60a5fa';
+    function showLoading(active, subtext = "") {
+      const overlay = document.getElementById('loadingOverlay');
+      if(subtext) document.getElementById('loadingSubtext').innerText = subtext;
+      if (active) overlay.classList.add('active');
+      else overlay.classList.remove('active');
+    }
+
+    function logTerm(module, msg, type = 'info', data = null) {
+      const term = document.getElementById('terminal');
+      let colorClass = 'log-success';
+      if(type === 'error') colorClass = 'log-error';
+      else if(type === 'warn') colorClass = 'log-data';
       
-      let out = `\n[${time}] <span style="color:${color}; font-weight:bold;">[${title}]</span>\n`;
-      if (typeof data === 'object') {
-        out += JSON.stringify(data, null, 2);
-      } else {
-        out += data;
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+      let out = `<div class="log-line"><span style="color:#8b949e;">[${time}]</span> <span class="log-module">[${module}]</span> <span class="${colorClass}">${msg}</span></div>`;
+      
+      if (data) {
+        out += `<div class="log-data">${JSON.stringify(data, null, 2)}</div>`;
       }
       
-      consoleEl.innerHTML += out + "\n";
-      consoleEl.scrollTop = consoleEl.scrollHeight;
+      term.innerHTML += out;
+      term.scrollTop = term.scrollHeight;
     }
 
     async function api(path, method = 'GET', body = null) {
@@ -161,98 +253,95 @@
 
     async function setupHeist() {
       try {
-        logToConsole("SETUP", "Creating Hacker Account...");
+        logTerm("CORE", "Generating untraceable mule account...");
         const hNum = Math.floor(Math.random() * 9000) + 1000;
-        const hReg = await api('/register', 'POST', { username: `hacker_${hNum}`, email: `hacker_${hNum}@darkweb.com`, password: "HackerPassword1!" });
+        const hReg = await api('/register', 'POST', { username: `mule_${hNum}`, email: `mule_${hNum}@ghost.net`, password: HARDCODED_PASS });
         hackerAccount = hReg.account_number;
+        
         document.getElementById('lblHackerAcc').innerText = hackerAccount;
-        document.getElementById('lblHackerAcc').style.color = "var(--danger)";
+        document.getElementById('lblHackerAcc').className = "val-green";
         
-        logToConsole("SETUP", "Setting up Victim Account...");
-        victimCreds.username = document.getElementById("targetUser").value;
-        victimCreds.password = document.getElementById("targetPass").value;
+        victimUser = document.getElementById("targetUser").value;
+        logTerm("CORE", `Target locked: ${victimUser}. Probing database...`);
         
-        // Try to register. If it fails (already exists), that's fine, we still have the creds.
+        // Try creating the user, if they exist it will just fail softly.
         try {
-          await api('/register', 'POST', { username: victimCreds.username, email: `${victimCreds.username}@gmail.com`, password: victimCreds.password });
+          await api('/register', 'POST', { username: victimUser, email: `${victimUser}@target.com`, password: "LegitPassword123" });
+          logTerm("CORE", `Target created successfully in database.`);
         } catch(e) {
-          logToConsole("INFO", `Predefined victim '${victimCreds.username}' already exists, using existing account.`);
+          logTerm("CORE", `Target already exists in database. Auth bypass will be utilized.`);
         }
         
-        document.getElementById('lblVictimInfo').innerText = `${victimCreds.username} (Predefined Target)`;
-        
-        logToConsole("SETUP COMPLETE", "Both accounts created successfully. The Hacker's destination account is ready.");
-        document.getElementById('step1').classList.remove('active');
-        document.getElementById('step2').classList.add('active');
-        
-      } catch (e) { logToConsole("SETUP ERROR", e.message, true); }
+      } catch (e) { logTerm("ERROR", e.message, 'error'); }
     }
 
     async function compromiseVictim() {
-      if (!victimCreds.username) {
-        alert("Please run Phase 1 first."); return;
-      }
-      
+      if (!victimUser) { alert("Please set target first."); return; }
       try {
-        logToConsole("ATO ATTACK", `Logging in as ${victimCreds.username} using stolen credentials from a new device in Russia...`);
+        logTerm("EXPLOIT", `Deploying HACKER_BYPASS payload for user: ${victimUser}...`);
         
-        // This simulates the hacker logging in. 
-        // The backend should log 'new_device_login' and track the suspicious IP.
-        const loginRes = await api('/login', 'POST', {
-          username: victimCreds.username,
-          password: victimCreds.password,
-          device_id: "kali-linux-unknown-browser",
-          ip_address: "185.120.44.1" // Suspicious VPN IP
+        await api('/login', 'POST', {
+          username: victimUser,
+          password: HARDCODED_PASS,
+          device_id: "shadow-node-01",
+          ip_address: "185.120.44.1"
         });
         
-        document.getElementById('lblSession').innerText = `Logged in as Victim (${victimCreds.username})`;
-        document.getElementById('lblSession').style.color = "var(--warning)";
-        logToConsole("ATO SUCCESS", "Successfully hijacked the Victim's session!");
+        document.getElementById('lblSession').innerText = "ACTIVE";
+        document.getElementById('lblSession').className = "val-green";
+        logTerm("EXPLOIT", "Authentication bypassed. Session token acquired.");
         
-      } catch (e) { logToConsole("LOGIN ERROR", e.message, true); }
+      } catch (e) { logTerm("ERROR", `Auth bypass failed: ${e.message}`, 'error'); }
     }
 
-    async function injectBotTelemetry() {
+    async function injectTelemetry(type) {
       try {
-        logToConsole("TELEMETRY", "Injecting bot telemetry: 650 WPM, 2 point robotic mouse movement...");
-        
-        const payload = {
-          typing_speed_wpm: 650,
-          mouse_movements: [
-            {x: 0, y: 0, time: 0},
-            {x: 500, y: 500, time: 10} // Impossible straight line
-          ]
-        };
-        
-        const res = await api('/telemetry/behavior', 'POST', payload);
-        logToConsole("TELEMETRY RESPONSE", res);
-      } catch (e) { logToConsole("TELEMETRY ERROR", e.message, true); }
+        if (type === 'bot') {
+          logTerm("INJECT", "Spoofing bot metrics: 650 WPM, linear vectors...");
+          await api('/telemetry/behavior', 'POST', {
+            typing_speed_wpm: 650, mouse_movements: [{x: 0, y: 0, time: 0}, {x: 500, y: 500, time: 10}]
+          });
+        } else if (type === 'vpn') {
+          logTerm("INJECT", "Routing via known malicious exit node (Impossible Travel)...");
+          await api('/security/simulate', 'POST', { event_type: "vpn_anomaly", device_id: "shadow-node-01" });
+        } else if (type === 'c2') {
+          logTerm("INJECT", "Deploying C2 beacon signature on endpoint...");
+          await api('/security/simulate', 'POST', { event_type: "device_compromised", device_id: "shadow-node-01" });
+        }
+        logTerm("INJECT", "Threat intelligence successfully manipulated.");
+      } catch (e) { logTerm("ERROR", e.message, 'error'); }
     }
 
     async function executeHeist() {
-      if (!hackerAccount) {
-        alert("Please run Phase 1 to generate the hacker's receiving account."); return;
-      }
+      if (!hackerAccount) { alert("Missing mule account."); return; }
       
       const amount = document.getElementById('transferAmount').value;
-      logToConsole("THE HEIST", `Attempting to drain ₹${amount} to Hacker Account (${hackerAccount})...`);
+      logTerm("PAYLOAD", `Constructing transfer packet: ₹${amount} -> ${hackerAccount}`);
       
-      try {
-        const res = await fetch(`${API_BASE}/transfer`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to_account: hackerAccount, amount: amount })
-        });
-        const data = await res.json();
-        
-        if (data.flagged || !res.ok) {
-          logToConsole("🛡️ BLOCKED BY AI ENGINE", data, true);
-        } else {
-          logToConsole("💀 FATAL: HEIST SUCCESSFUL", data);
+      showLoading(true, "Injecting transfer packet...");
+      
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/transfer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to_account: hackerAccount, amount: amount })
+          });
+          const data = await res.json();
+          showLoading(false);
+          
+          if (data.flagged || !res.ok) {
+            logTerm("INTERCEPT", "Exploit blocked by ML correlation engine!", 'error');
+            logTerm("DUMP", "Intercept Details", 'warn', data);
+          } else {
+            logTerm("SUCCESS", "Exploit successful. Funds transferred.", 'success');
+            logTerm("DUMP", "Transaction Receipt", 'info', data);
+          }
+        } catch (e) {
+          showLoading(false);
+          logTerm("ERROR", e.message, 'error');
         }
-      } catch (e) {
-        logToConsole("NETWORK ERROR", e.message, true);
-      }
+      }, 1500);
     }
   </script>
 </body>

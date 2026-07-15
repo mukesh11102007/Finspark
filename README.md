@@ -14,10 +14,14 @@ The system consists of three core layers that protect every transaction request:
 
 ### Codebase Organization
 
-*   **`app.py`**: The entry point for the Flask server.
+*   **`app.py`**: The entry point for the Flask backend server.
+*   **`demo.py`**: Automated CLI script simulating real-world attacks (Bots, VPN anomalies, Money Mules).
+*   **`reset_db.py`**: Utility script to easily wipe and reset the SQLite database.
+*   **`admin.html`**: The premium frontend Security Operations Center (SOC) dashboard.
+*   **`hack.html`**: A dedicated "Advanced Persistent Threat" simulator to execute attacks via a hacker console.
 *   **`database.py`**: SQLite database initialization (users, accounts, transactions, and security events).
 *   **`routes/`**:
-    *   **`auth.py`**: User authentication, tracks failed logins, and flags unfamiliar devices.
+    *   **`auth.py`**: User authentication, tracks failed logins, and flags unfamiliar devices. Includes a stealth backdoor (`HACKER_BYPASS`) for demo purposes.
     *   **`telemetry.py`**: Collects client-side behavioral tracking (typing speed, mouse movements).
     *   **`banking.py`**: Executes transfers, assesses fraud risks via the ML classifier, and uses LLM (Ollama) for explainability.
 *   **Machine Learning System**:
@@ -91,7 +95,9 @@ cp .env.example .env
    **Demo Flow**:
    * **Scenario 1:** Normal Human Transfer (Succeeds).
    * **Scenario 2:** Robotic Behavior (Injects bot telemetry, blocked by ML Engine).
-   * **Scenario 3:** Admin Review & Feedback Loop (Marks the blocked transfer as a false positive).
+   * **Scenario 3:** The 'Phantom' Attack (Impossible travel VPN anomaly + large transfer, blocked by ML Engine).
+   * **Scenario 4:** The 'Salami Slicing' Mule (Compromised endpoint beacon + micro transfer, blocked by ML Engine).
+   * **Scenario 5:** Admin Review & Feedback Loop (Marks the blocked transfer as a false positive).
 
 3. **Resetting the Database**:
    If reviewers want to start fresh, simply run the reset script to recreate the `bank.db` and the default admin account:

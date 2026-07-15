@@ -253,7 +253,6 @@
     <a class="nav-item active" onclick="switchTab('dashboard', this)"><i data-lucide="layout-dashboard" width="18"></i> Overview</a>
     <a class="nav-item" onclick="switchTab('threats', this)"><i data-lucide="activity" width="18"></i> Threat Intel</a>
     <a class="nav-item" onclick="switchTab('network', this)"><i data-lucide="network" width="18"></i> Network Flow</a>
-    <a class="nav-item" onclick="switchTab('simulator', this)"><i data-lucide="terminal" width="18"></i> Simulator</a>
   </div>
   
   <div class="sidebar-footer">
@@ -357,35 +356,7 @@
       </div>
     </div>
 
-    <!-- SIMULATOR TAB -->
-    <div id="tab-simulator" class="view-section">
-      <div class="panel" style="max-width: 600px;">
-        <h3><i data-lucide="terminal" width="18" style="color: var(--accent-red);"></i> Simulate Security Telemetry</h3>
-        <p class="muted" style="margin-bottom: 24px;">Inject a simulated threat event into the Correlation Engine to observe real-time risk adjustments.</p>
-        
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          <div>
-            <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 8px;">Target User</label>
-            <select id="targetUserIdCard" style="width: 100%;">
-              <option value="">-- Select User --</option>
-              <option value="0">Unknown / Dummy User</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 8px;">Event Type</label>
-            <select id="eventType" style="width: 100%;">
-              <option value="new_device_login">New Device Login</option>
-              <option value="impossible_travel">Impossible Travel Anomaly</option>
-              <option value="malware_detected">Malware Signature Detected</option>
-              <option value="device_compromised">Endpoint Compromised (C2)</option>
-              <option value="brute_force_attempt">Brute Force Login</option>
-              <option value="vpn_anomaly">VPN / Proxy Exit Node</option>
-            </select>
-          </div>
-          <button class="btn" style="background: var(--accent-red); color: white; margin-top: 10px;" onclick="simulateEvent()"><i data-lucide="zap" width="16"></i> Inject Threat Intel</button>
-        </div>
-      </div>
-    </div>
+
 
   </div>
 </div>
@@ -472,20 +443,6 @@ async function resetDemo() {
   } catch(e) { toast('Error resetting: ' + e.message); }
 }
 
-async function simulateEvent() {
-  try {
-    const type = document.getElementById('eventType').value;
-    const targetUser = document.getElementById('targetUserIdCard').value;
-    const payload = { event_type: type, device_id: 'suspicious-workstation' };
-    if (targetUser.trim() !== '') {
-      payload.target_user_id = parseInt(targetUser, 10);
-    }
-    const r = await api('/api/security/simulate', 'POST', payload);
-    toast('Threat Intel Injected: ' + r.message);
-    fetchGlobalEvents();
-  } catch(e) { toast('Error: ' + e.message); }
-}
-
 async function fetchGlobalEvents() {
   try {
     const r = await api('/api/admin/overview');
@@ -525,10 +482,18 @@ async function fetchGlobalEvents() {
       if (t.score_features) {
           try {
               const features = JSON.parse(t.score_features);
-              xaiHtml += '<div>';
-              features.forEach(f => {
-                  xaiHtml += `<span class="badge bg-red" style="font-size:9px; margin:0 4px 4px 0; text-transform:none;">+ ${f}</span>`;
-              });
+              xaiHtml += '<div style="margin-top: 6px;">';
+              if (features.length > 0) {
+                  xaiHtml += `<span class="badge bg-red" style="font-size:9px; margin:0 4px 4px 0; text-transform:none; display:inline-block;">+ ${features[0]}</span>`;
+                  if (features.length > 1) {
+                      xaiHtml += `<span class="badge bg-blue" style="font-size:9px; margin:0 4px 4px 0; cursor:pointer; display:inline-block;" onclick="const d = this.nextElementSibling; d.style.display = d.style.display === 'none' ? 'flex' : 'none'; this.textContent = d.style.display === 'none' ? '+ ${features.length - 1} More' : 'Show Less';">+ ${features.length - 1} More</span>`;
+                      xaiHtml += `<div style="display:none; flex-wrap:wrap; gap:4px; margin-top:4px;">`;
+                      for(let i = 1; i < features.length; i++) {
+                           xaiHtml += `<span class="badge bg-red" style="font-size:9px; margin:0; text-transform:none; display:inline-block;">+ ${features[i]}</span>`;
+                      }
+                      xaiHtml += `</div>`;
+                  }
+              }
               xaiHtml += '</div>';
           } catch(e){}
       }
