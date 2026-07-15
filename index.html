@@ -2352,6 +2352,13 @@
         }
     }, 5000);
 
+    // Auto-refresh dashboard data if logged in
+    setInterval(() => {
+        if (CURRENT_USER && CURRENT_USER.username.toLowerCase() !== 'admin') {
+            refreshAll().catch(e => console.error("Auto-refresh failed:", e));
+        }
+    }, 3000);
+
   </script>
 
 </body>
