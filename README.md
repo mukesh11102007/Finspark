@@ -34,9 +34,18 @@ Unlike standard password/OTP layers, behavioral biometrics observe *how* an acti
 *   **Typing Speed Anomalies**: Flags instantaneous pasting of payloads (e.g., > 200 WPM).
 
 ### 2. Machine Learning Fraud Classifier
-When a user attempts a transfer, the server assesses:
-*   **Geo-Distance calculation**: Uses the Haversine formula to compute distance from home location.
-*   **Random Forest Scoring**: Computes a fraud probability score based on factors like amount, login attempts, device risk, and client biometrics. Transactions exceeding a **60% fraud probability** are blocked.
+The system uses a Kaggle-sourced dataset (`banking_transactions.csv`) robustly augmented with synthesized biometric features to train a Random Forest model.
+
+**Features included in the Random Forest Classifier:**
+*   **Base Transaction Data:** `transaction_amount`, `login_attempts`, `device_risk_score`, `transfer_frequency`, `anomaly_score`, `account_age_days`, `transaction_time_hour`, `failed_transactions_last_30d`, `avg_monthly_balance`, `daily_transaction_count`, `geo_distance_km`, `session_duration_minutes`, `transaction_velocity_score`, `card_present_flag`, `international_transaction_flag`, `suspicious_ip_flag`.
+*   **Categorical Features:** `payment_channel` and `authentication_type` (label-encoded).
+*   **Synthesized Behavioral Biometrics:** 
+    *   `typing_wpm` (Humans: 30-110, Bots: 400-1200)
+    *   `mouse_distance_total` (Humans: 800-4000px, Bots: 50-200px straight lines)
+    *   `mouse_speed_avg` (Humans: 1-4, Bots: 20-50)
+
+**How data values are robustly updated:**
+The `train_model.py` pipeline loads the base Kaggle transactions dataset and dynamically synthesizes corresponding biometric telemetry based on the historical `fraud_flag`. Using NumPy's uniform distribution randomization (`np.random.uniform`), the script ensures that the generated biometric data introduces realistic noise, rather than static mock values. For instance, a fraudulent transaction will consistently be assigned robotic telemetry traits within a randomized high-threat threshold, ensuring the classifier can learn complex, non-linear relationships between financial context and user behavior without overfitting on static constants. When processing a live transfer, real-time client-side JS captures these live values (geo-distance, WPM, mouse speed) and feeds them into the trained model. Transactions exceeding a **60% fraud probability** are blocked.
 
 ### 3. Explainable AI (LLM Explanations)
 *   **Local LLM (Ollama)**: Dynamically generates friendly, professional explanations based on threat flags (e.g., using `gemma3:4b`).
