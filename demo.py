@@ -195,7 +195,7 @@ def scenario_admin_feedback(blocked_txn_id):
 
 def run_all_scenarios():
     """Orchestrates the entire demo simulation."""
-    print_header("SecureBank Demo Flow")
+    print_header("SBX Demo Flow")
     try:
         session, sender_info, recipient_acc = setup_users()
         time.sleep(1)

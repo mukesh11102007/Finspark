@@ -1,6 +1,6 @@
-# SecureBank Anti-Fraud System (Finspark Hackathon)
+# SBX Anti-Fraud System (Finspark Hackathon)
 
-SecureBank is a prototype web application demonstrating a modern, multi-layered digital banking protection system. Built for the **Finspark Hackathon**, it integrates security telemetry, real-time client-side behavioral biometrics, and a machine learning classifier to safeguard accounts from account takeover and automated transaction scripts (bots).
+SBX is a prototype web application demonstrating a modern, multi-layered digital banking protection system. Built for the **Finspark Hackathon**, it integrates security telemetry, real-time client-side behavioral biometrics, and a machine learning classifier to safeguard accounts from account takeover and automated transaction scripts (bots).
 
 ---
 

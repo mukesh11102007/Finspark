@@ -14,5 +14,5 @@ def reset_database():
     print("[+] Database initialized successfully with default tables and admin account.")
 
 if __name__ == "__main__":
-    print("Resetting SecureBank Database...")
+    print("Resetting SBX Database...")
     reset_database()

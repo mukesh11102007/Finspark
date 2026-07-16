@@ -81,7 +81,7 @@ def init_db():
         now = datetime.utcnow().isoformat()
         db.execute(
             "INSERT INTO users (username, email, password_hash, created_at, risk_level) VALUES (?, ?, ?, ?, ?)",
-            ("admin", "admin@securebank.com", generate_password_hash(admin_password), now, "admin")
+            ("admin", "admin@SBX.com", generate_password_hash(admin_password), now, "admin")
         )
 
     db.commit()

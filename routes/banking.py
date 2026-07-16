@@ -3,36 +3,53 @@ from datetime import datetime
 from database import get_db
 from routes.auth import require_login
 import requests
+import os
+import logging
 import json
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 banking_bp = Blueprint("banking", __name__)
 
 def generate_ai_explanation(reason_details):
+    
     prompt = (
         f"Explain to a banking user in one short, professional, and friendly sentence "
         f"why their transaction was blocked or flagged. Reason: {reason_details}. "
         f"Do not include any greeting, JSON, or meta-commentary, just the sentence itself."
     )
     
-    # Try local Ollama with installed gemma3:4b first, then other tags as fallback
-    models = ["gemma3:4b", "gemma:2b", "gemma:latest", "llama3"]
-    for model in models:
+    api_key = os.environ.get("GROQ_API_KEY")
+    if api_key:
         try:
             r = requests.post(
-                "http://localhost:11434/api/generate",
-                json={"model": model, "prompt": prompt, "stream": False},
-                timeout=3.0
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "llama3-8b-8192",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.3
+                },
+                timeout=5.0
             )
             if r.status_code == 200:
-                explanation = r.json().get("response", "").strip()
+                explanation = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                 if explanation:
                     return explanation
-        except Exception:
-            continue
+            else:
+                logging.warning(f"Groq API returned status {r.status_code}: {r.text}")
+        except Exception as e:
+            logging.warning(f"Groq API call failed: {e}")
+    else:
+        logging.warning("GROQ_API_KEY not found in environment.")
             
-    # Rule-based fallback if Ollama is unavailable
-    import logging
-    logging.warning("Ollama LLM is unavailable or models failed. Using rule-based fallback for explanation.")
+    # Rule-based fallback if API is unavailable
+    logging.warning("Using rule-based fallback for explanation.")
     
     reason_lower = reason_details.lower()
     if "insufficient funds" in reason_lower:
