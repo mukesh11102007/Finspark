@@ -410,7 +410,7 @@ async function api(path, method = 'GET', body = null) {
       window.location.href = '/'; 
     } else {
       await fetchGlobalEvents();
-      setInterval(fetchGlobalEvents, 3000); // Auto-refresh every 3s
+      setInterval(fetchGlobalEvents, 10000); // Auto-refresh every 10s
     }
   } catch(e) {
     window.location.href = '/'; 
