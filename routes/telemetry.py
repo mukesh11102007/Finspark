@@ -13,7 +13,8 @@ EVENT_CATALOGUE = {
     "brute_force_attempt": ("high", "Multiple failed login attempts detected in a short window."),
     "vpn_anomaly": ("low", "User connected through an unrecognized VPN/proxy exit node."),
     "behavioral_anomaly": ("medium", "Client-side tracking detected unusual interaction patterns (mouse/keystrokes)."),
-    "quantum_exfiltration": ("critical", "Anomalous sustained high-volume encrypted data transfer (HNDL risk).")
+    "quantum_exfiltration": ("critical", "Anomalous sustained high-volume encrypted data transfer (HNDL risk)."),
+    "clipboard_paste": ("medium", "User pasted data into a sensitive field, indicating credential stuffing or script usage.")
 }
 
 def _log_security_event(db, user_id, event_type, device_id, ip_address, details=None):

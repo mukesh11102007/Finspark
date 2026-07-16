@@ -2352,6 +2352,20 @@
         }
     }, 5000);
 
+    // ==========================================
+    // STRETCH GOAL: Paste Event Detection
+    // ==========================================
+    const toAccountInput = document.getElementById('toAccount');
+    if (toAccountInput) {
+        toAccountInput.addEventListener('paste', function(e) {
+            console.log("[Security] Paste event detected on account input.");
+            api('/api/security/simulate', 'POST', { 
+                event_type: "clipboard_paste", 
+                device_id: "browser" 
+            }).catch(console.error);
+        });
+    }
+
   </script>
 
 </body>

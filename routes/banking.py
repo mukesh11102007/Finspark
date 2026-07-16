@@ -31,7 +31,7 @@ def generate_ai_explanation(reason_details):
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "llama3-8b-8192",
+                    "model": "llama-3.1-8b-instant",
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.3
                 },
@@ -354,8 +354,20 @@ def admin_overview():
     all_accounts = db.execute("SELECT account_number, user_id FROM accounts").fetchall()
     all_txns = db.execute("SELECT from_account, to_account, amount FROM transactions WHERE status='success'").fetchall()
     
-    nodes = [{"id": a["account_number"], "label": f"User {a['user_id']}\n\n{a['account_number']}"} for a in all_accounts]
-    edges = [{"from": t["from_account"], "to": t["to_account"], "value": t["amount"]} for t in all_txns]
+    risky_user_ids = {u["id"] for u in users if u["risk_level"] in ("elevated", "high", "critical")}
+    risky_accounts = {a["account_number"] for a in all_accounts if a["user_id"] in risky_user_ids}
+    
+    filtered_edges = [t for t in all_txns if t["from_account"] in risky_accounts or t["to_account"] in risky_accounts]
+    
+    graph_account_numbers = set(risky_accounts)
+    for t in filtered_edges:
+        graph_account_numbers.add(t["from_account"])
+        graph_account_numbers.add(t["to_account"])
+        
+    filtered_nodes = [a for a in all_accounts if a["account_number"] in graph_account_numbers]
+
+    nodes = [{"id": a["account_number"], "label": f"User {a['user_id']}\n\n{a['account_number']}"} for a in filtered_nodes]
+    edges = [{"from": t["from_account"], "to": t["to_account"], "value": t["amount"]} for t in filtered_edges]
     
     return jsonify({
         "users": [dict(u) for u in users],
