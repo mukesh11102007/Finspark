@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Advanced Persistent Threat Framework | SBX</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     :root {
@@ -22,151 +25,445 @@
       --font-mono: 'Fira Code', monospace;
       --font-sans: 'Inter', sans-serif;
     }
-    
-    * { box-sizing: border-box; }
-    
-    body { 
-      margin: 0; padding: 0; 
-      font-family: var(--font-sans); 
-      background-color: var(--bg-base); 
-      color: var(--text-main); 
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      background-color: var(--bg-base);
+      color: var(--text-main);
       height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-    
+
     /* Topbar */
     .topbar {
-      height: 50px; background: var(--bg-panel); border-bottom: 1px solid var(--border-muted);
-      display: flex; align-items: center; padding: 0 20px; justify-content: space-between;
+      height: 50px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-muted);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      justify-content: space-between;
     }
+
     .topbar-title {
-      font-family: var(--font-mono); font-weight: 700; color: var(--accent-blue);
-      display: flex; align-items: center; gap: 10px; font-size: 14px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
     }
+
     .topbar-status {
-      font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);
-      display: flex; align-items: center; gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
-    
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
     /* Main Layout */
     .workspace {
-      display: flex; flex: 1; height: calc(100vh - 50px);
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 50px);
     }
-    
+
     /* Sidebar (Controls) */
     .sidebar {
-      width: 480px; background: var(--bg-base); border-right: 1px solid var(--border-muted);
-      display: flex; flex-direction: column; overflow-y: auto; padding: 20px;
+      width: 480px;
+      background: var(--bg-base);
+      border-right: 1px solid var(--border-muted);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 20px;
     }
-    
+
     .section-title {
-      font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
-      font-weight: 600; margin-bottom: 15px; border-bottom: 1px solid var(--border-muted); padding-bottom: 5px;
-      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 15px;
+      border-bottom: 1px solid var(--border-muted);
+      padding-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    
+
     .module-card {
-      background: var(--bg-panel); border: 1px solid var(--border-muted); border-radius: 6px;
-      padding: 15px; margin-bottom: 20px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-muted);
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
     }
-    
-    .form-group { margin-bottom: 12px; }
-    label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
-    input[type="text"], input[type="number"] { 
-      width: 100%; padding: 8px 12px; background: var(--bg-base); border: 1px solid var(--border-muted); 
-      color: var(--text-main); border-radius: 4px; font-family: var(--font-mono); font-size: 13px; 
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-muted);
+      color: var(--text-main);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
       transition: border-color 0.2s;
     }
-    input:focus { outline: none; border-color: var(--accent-blue); }
-    
-    button {
-      width: 100%; padding: 10px; background: var(--bg-base); border: 1px solid var(--border-muted);
-      color: var(--text-main); border-radius: 4px; font-family: var(--font-sans); font-size: 13px;
-      font-weight: 500; cursor: pointer; transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;
-    }
-    button:hover:not(:disabled) { background: var(--border-muted); color: #fff; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .btn-green { background: rgba(63, 185, 80, 0.1); border-color: var(--accent-green); color: var(--accent-green); }
-    .btn-green:hover:not(:disabled) { background: var(--accent-green); color: #fff; }
-    .btn-blue { background: rgba(88, 166, 255, 0.1); border-color: var(--accent-blue); color: var(--accent-blue); }
-    .btn-blue:hover:not(:disabled) { background: var(--accent-blue); color: #fff; }
-    .btn-red { background: rgba(248, 81, 73, 0.1); border-color: var(--accent-red); color: var(--accent-red); }
-    .btn-red:hover:not(:disabled) { background: var(--accent-red); color: #fff; }
-    .btn-yellow { background: rgba(210, 153, 34, 0.1); border-color: var(--accent-yellow); color: var(--accent-yellow); }
-    .btn-yellow:hover:not(:disabled) { background: var(--accent-yellow); color: #000; }
-    .btn-purple { background: rgba(188, 140, 255, 0.1); border-color: var(--accent-purple); color: var(--accent-purple); }
-    .btn-purple:hover:not(:disabled) { background: var(--accent-purple); color: #000; }
+    input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-muted);
+      color: var(--text-main);
+      border-radius: 4px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--border-muted);
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-green {
+      background: rgba(63, 185, 80, 0.1);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .btn-green:hover:not(:disabled) {
+      background: var(--accent-green);
+      color: #fff;
+    }
+
+    .btn-blue {
+      background: rgba(88, 166, 255, 0.1);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    .btn-blue:hover:not(:disabled) {
+      background: var(--accent-blue);
+      color: #fff;
+    }
+
+    .btn-red {
+      background: rgba(248, 81, 73, 0.1);
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+    }
+
+    .btn-red:hover:not(:disabled) {
+      background: var(--accent-red);
+      color: #fff;
+    }
+
+    .btn-yellow {
+      background: rgba(210, 153, 34, 0.1);
+      border-color: var(--accent-yellow);
+      color: var(--accent-yellow);
+    }
+
+    .btn-yellow:hover:not(:disabled) {
+      background: var(--accent-yellow);
+      color: #000;
+    }
+
+    .btn-purple {
+      background: rgba(188, 140, 255, 0.1);
+      border-color: var(--accent-purple);
+      color: var(--accent-purple);
+    }
+
+    .btn-purple:hover:not(:disabled) {
+      background: var(--accent-purple);
+      color: #000;
+    }
 
     .btn-chain {
       background: linear-gradient(90deg, rgba(248, 81, 73, 0.2), rgba(188, 140, 255, 0.2));
-      border: 1px solid var(--accent-red); color: #fff; font-size: 14px; padding: 12px;
+      border: 1px solid var(--accent-red);
+      color: #fff;
+      font-size: 14px;
+      padding: 12px;
     }
+
     .btn-chain:hover:not(:disabled) {
       background: linear-gradient(90deg, var(--accent-red), var(--accent-purple));
     }
-    
-    .status-row { display: flex; justify-content: space-between; font-size: 12px; font-family: var(--font-mono); margin-bottom: 8px; }
-    .val-green { color: var(--accent-green); }
-    .val-red { color: var(--accent-red); }
-    .val-yellow { color: var(--accent-yellow); }
-    
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      margin-bottom: 8px;
+    }
+
+    .val-green {
+      color: var(--accent-green);
+    }
+
+    .val-red {
+      color: var(--accent-red);
+    }
+
+    .val-yellow {
+      color: var(--accent-yellow);
+    }
+
     /* Terminal (Right Pane) */
     .terminal-pane {
-      flex: 1; background: #000; padding: 20px; overflow-y: auto;
-      font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: #a5d6ff;
+      flex: 1;
+      background: #000;
+      padding: 20px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      color: #a5d6ff;
     }
-    .term-header { color: #8b949e; margin-bottom: 20px; white-space: pre; }
-    .log-line { margin-bottom: 4px; word-wrap: break-word; }
-    .log-module { color: #79c0ff; font-weight: bold; }
-    .log-error { color: #ff7b72; }
-    .log-success { color: #7ee787; }
-    .log-warn { color: var(--accent-yellow); }
-    .log-data { color: #d2a8ff; padding-left: 20px; white-space: pre-wrap; font-size: 12px; }
-    
+
+    .term-header {
+      color: #8b949e;
+      margin-bottom: 20px;
+      white-space: pre;
+    }
+
+    .log-line {
+      margin-bottom: 4px;
+      word-wrap: break-word;
+    }
+
+    .log-module {
+      color: #79c0ff;
+      font-weight: bold;
+    }
+
+    .log-error {
+      color: #ff7b72;
+    }
+
+    .log-success {
+      color: #7ee787;
+    }
+
+    .log-warn {
+      color: var(--accent-yellow);
+    }
+
+    .log-data {
+      color: #d2a8ff;
+      padding-left: 20px;
+      white-space: pre-wrap;
+      font-size: 12px;
+    }
+
     /* Loading Overlay */
     #loadingOverlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(13, 17, 23, 0.9); z-index: 9999; backdrop-filter: blur(5px);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(13, 17, 23, 0.9);
+      z-index: 9999;
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
     }
-    #loadingOverlay.active { opacity: 1; pointer-events: all; }
-    
+
+    #loadingOverlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
     .loader-ring {
-      width: 50px; height: 50px; border: 3px solid rgba(88, 166, 255, 0.2);
-      border-top-color: var(--accent-blue); border-radius: 50%;
-      animation: spin 1s linear infinite; margin-bottom: 20px;
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(88, 166, 255, 0.2);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
     }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    
-    .loading-text { font-family: var(--font-mono); color: var(--accent-blue); font-size: 14px; margin-bottom: 5px; }
-    .loading-subtext { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      font-family: var(--font-mono);
+      color: var(--accent-blue);
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .loading-subtext {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-size: 12px;
+    }
 
     /* Users List */
-    .users-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 200px; margin-bottom: 12px; }
-    .user-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-muted); border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
-    .user-card:hover { border-color: var(--accent-yellow); background: rgba(210, 153, 34, 0.08); }
-    .user-card.selected { border-color: var(--accent-red); background: rgba(248, 81, 73, 0.1); }
-    .user-card .uname { font-weight: 600; font-size: 13px; font-family: var(--font-sans); }
-    .user-card .uacc { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px; }
-    .urisk { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; }
-    .risk-normal { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); }
-    .risk-elevated { background: rgba(210, 153, 34, 0.15); color: var(--accent-yellow); }
-    .risk-high, .risk-critical { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+    .users-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      max-height: 200px;
+      margin-bottom: 12px;
+    }
 
-    .amount-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-    .amount-row input { flex: 1; }
-    
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-    .running { animation: pulse 1s infinite; }
+    .user-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-muted);
+      border-radius: 6px;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
+    .user-card:hover {
+      border-color: var(--accent-yellow);
+      background: rgba(210, 153, 34, 0.08);
+    }
+
+    .user-card.selected {
+      border-color: var(--accent-red);
+      background: rgba(248, 81, 73, 0.1);
+    }
+
+    .user-card .uname {
+      font-weight: 600;
+      font-size: 13px;
+      font-family: var(--font-sans);
+    }
+
+    .user-card .uacc {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .urisk {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .risk-normal {
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--accent-green);
+    }
+
+    .risk-elevated {
+      background: rgba(210, 153, 34, 0.15);
+      color: var(--accent-yellow);
+    }
+
+    .risk-high,
+    .risk-critical {
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--accent-red);
+    }
+
+    .amount-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .amount-row input {
+      flex: 1;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.5
+      }
+    }
+
+    .running {
+      animation: pulse 1s infinite;
+    }
   </style>
 </head>
+
 <body>
 
   <!-- Loading Overlay -->
@@ -189,10 +486,11 @@
   <div class="workspace">
     <!-- Left Sidebar: Controls -->
     <div class="sidebar">
-      
+
       <div class="section-title">
         <span>01. Target Acquisition</span>
-        <button onclick="refreshUsers()" style="width:auto; padding:4px 8px; font-size:10px; margin:0;"><i data-lucide="refresh-cw" width="12"></i> Refresh</button>
+        <button onclick="refreshUsers()" style="width:auto; padding:4px 8px; font-size:10px; margin:0;"><i
+            data-lucide="refresh-cw" width="12"></i> Refresh</button>
       </div>
       <div class="module-card">
         <div class="users-list" id="usersList">
@@ -200,19 +498,22 @@
         </div>
 
         <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border-muted);">
-          <div class="status-row"><span>Mule Account:</span><span id="lblHackerAcc" class="val-yellow">PROVISIONING...</span></div>
+          <div class="status-row"><span>Mule Account:</span><span id="lblHackerAcc"
+              class="val-yellow">PROVISIONING...</span></div>
           <div class="status-row"><span>Active Session:</span><span id="lblSession" class="val-red">NONE</span></div>
         </div>
       </div>
 
       <div class="section-title">02. Automated Attack Chain</div>
       <div class="module-card" style="background: rgba(248, 81, 73, 0.05); border-color: rgba(248, 81, 73, 0.2);">
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 0; line-height: 1.4;">Sequentially executes all 5 demonstration scenarios (Normal, Bot, VPN Phantom, Salami C2, Admin Feedback).</p>
-        <button class="btn-chain" id="btnChain" onclick="runFullChain()"><i data-lucide="zap" width="16"></i> Launch Full Attack Chain</button>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 0; line-height: 1.4;">Sequentially executes all
+          5 demonstration scenarios (Normal, Bot, VPN Phantom, Salami C2, Admin Feedback).</p>
+        <button class="btn-chain" id="btnChain" onclick="runFullChain()"><i data-lucide="zap" width="16"></i> Launch
+          Full Attack Chain</button>
       </div>
 
       <div class="section-title">03. Individual Scenarios</div>
-      
+
       <div class="module-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
           <h3 style="margin:0; font-size:13px; color:var(--text-main);">📋 Normal Transfer</h3>
@@ -221,7 +522,8 @@
         <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">Legitimate human transfer behavior.</p>
         <div class="amount-row">
           <input type="number" id="amt1" value="500">
-          <button class="btn-green" onclick="attackNormal()" style="width: auto; margin:0;"><i data-lucide="play" width="14"></i> Run</button>
+          <button class="btn-green" onclick="attackNormal()" style="width: auto; margin:0;"><i data-lucide="play"
+              width="14"></i> Run</button>
         </div>
       </div>
 
@@ -230,10 +532,12 @@
           <h3 style="margin:0; font-size:13px; color:var(--text-main);">🤖 Bot Behavior</h3>
           <span class="urisk risk-high">BLOCKED</span>
         </div>
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">Injects 650 WPM typing + straight-line mouse telemetry.</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">Injects 650 WPM typing + straight-line
+          mouse telemetry.</p>
         <div class="amount-row">
           <input type="number" id="amt2" value="1500">
-          <button class="btn-red" onclick="attackBot()" style="width: auto; margin:0;"><i data-lucide="play" width="14"></i> Run</button>
+          <button class="btn-red" onclick="attackBot()" style="width: auto; margin:0;"><i data-lucide="play"
+              width="14"></i> Run</button>
         </div>
       </div>
 
@@ -242,10 +546,12 @@
           <h3 style="margin:0; font-size:13px; color:var(--text-main);">👻 VPN Phantom Attack</h3>
           <span class="urisk risk-high">BLOCKED</span>
         </div>
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">Injects impossible travel VPN anomaly followed by large transfer.</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">Injects impossible travel VPN anomaly
+          followed by large transfer.</p>
         <div class="amount-row">
           <input type="number" id="amt3" value="9500">
-          <button class="btn-yellow" onclick="attackVPN()" style="width: auto; margin:0;"><i data-lucide="play" width="14"></i> Run</button>
+          <button class="btn-yellow" onclick="attackVPN()" style="width: auto; margin:0;"><i data-lucide="play"
+              width="14"></i> Run</button>
         </div>
       </div>
 
@@ -254,10 +560,12 @@
           <h3 style="margin:0; font-size:13px; color:var(--text-main);">🔪 Salami Slicing (C2)</h3>
           <span class="urisk risk-high">BLOCKED</span>
         </div>
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">Marks device as compromised, then evades with micro-transfer.</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">Marks device as compromised, then evades
+          with micro-transfer.</p>
         <div class="amount-row">
           <input type="number" id="amt4" value="100">
-          <button class="btn-purple" onclick="attackSalami()" style="width: auto; margin:0;"><i data-lucide="play" width="14"></i> Run</button>
+          <button class="btn-purple" onclick="attackSalami()" style="width: auto; margin:0;"><i data-lucide="play"
+              width="14"></i> Run</button>
         </div>
       </div>
 
@@ -267,7 +575,8 @@
         </div>
         <div class="amount-row">
           <input type="number" id="amtDrain" value="4500">
-          <button class="btn-red" onclick="attackDrain()" style="width: auto; margin:0;"><i data-lucide="terminal" width="14"></i> Execute Payload</button>
+          <button class="btn-red" onclick="attackDrain()" style="width: auto; margin:0;"><i data-lucide="terminal"
+              width="14"></i> Execute Payload</button>
         </div>
       </div>
 
@@ -275,23 +584,28 @@
 
     <!-- Right Pane: Terminal -->
     <div class="terminal-pane">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-muted); padding-bottom:10px; margin-bottom:15px;">
-        <span style="color:var(--text-muted); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Live Attack Console</span>
-        <button onclick="clearConsole()" style="width:auto; padding:4px 8px; font-size:10px; margin:0; background:transparent;"><i data-lucide="trash-2" width="12"></i> Clear</button>
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-muted); padding-bottom:10px; margin-bottom:15px;">
+        <span
+          style="color:var(--text-muted); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Live
+          Attack Console</span>
+        <button onclick="clearConsole()"
+          style="width:auto; padding:4px 8px; font-size:10px; margin:0; background:transparent;"><i
+            data-lucide="trash-2" width="12"></i> Clear</button>
       </div>
       <div id="terminal" style="max-height: calc(100vh - 120px); overflow-y:auto;">
         <div class="term-header">
-     ___  ___ _____   __   __   __
-    / _ \/ _ \_   _|__\ \ / /_ _\ \ 
-   |  _/  _/  | |_____\ V /  _` |> >
-   |_| |_|    |_|      \_/ \__,_/_/ 
-   
-   SBX Penetration Testing Toolkit v2.0.4
-   Copyright (c) Advanced Threat Research Group.
-   
-   [*] Initializing subroutines... OK
-   [*] Loaded HACKER_BYPASS auth module... OK
-   [*] Provisioning stealth mule account...
+          ___ ___ _____ __ __ __
+          / _ \/ _ \_ _|__\ \ / /_ _\ \
+          | _/ _/ | |_____\ V / _` |> >
+          |_| |_| |_| \_/ \__,_/_/
+
+          SBX Penetration Testing Toolkit v2.0.4
+          Copyright (c) Advanced Threat Research Group.
+
+          [*] Initializing subroutines... OK
+          [*] Loaded HACKER_BYPASS auth module... OK
+          [*] Provisioning stealth mule account...
         </div>
       </div>
     </div>
@@ -300,7 +614,7 @@
   <script>
     lucide.createIcons();
     const API_BASE = "http://127.0.0.1:5000/api";
-    
+
     let hackerAccount = "";
     let victimSession = { username: "", password: "" };
     const HARDCODED_PASS = "HACKER_BYPASS";
@@ -308,7 +622,7 @@
 
     function showLoading(active, subtext = "") {
       const overlay = document.getElementById('loadingOverlay');
-      if(subtext) document.getElementById('loadingSubtext').innerText = subtext;
+      if (subtext) document.getElementById('loadingSubtext').innerText = subtext;
       if (active) overlay.classList.add('active');
       else overlay.classList.remove('active');
     }
@@ -316,24 +630,24 @@
     function logTerm(module, msg, type = 'info', data = null) {
       const term = document.getElementById('terminal');
       let colorClass = 'log-success';
-      if(type === 'error') colorClass = 'log-error';
-      else if(type === 'warn') colorClass = 'log-warn';
-      else if(type === 'cyan') colorClass = 'log-module'; // reusing color
-      
+      if (type === 'error') colorClass = 'log-error';
+      else if (type === 'warn') colorClass = 'log-warn';
+      else if (type === 'cyan') colorClass = 'log-module'; // reusing color
+
       const time = new Date().toLocaleTimeString('en-US', { hour12: false });
       let out = `<div class="log-line"><span style="color:#8b949e;">[${time}]</span> <span class="log-module">[${module}]</span> <span class="${colorClass}">${msg}</span></div>`;
-      
+
       if (data) {
         out += `<div class="log-data">${JSON.stringify(data, null, 2)}</div>`;
       }
-      
+
       term.innerHTML += out;
       term.scrollTop = term.scrollHeight;
     }
 
-    function clearConsole() { 
-        document.getElementById("terminal").innerHTML = ""; 
-        logTerm("SYS", "Console cleared.");
+    function clearConsole() {
+      document.getElementById("terminal").innerHTML = "";
+      logTerm("SYS", "Console cleared.");
     }
 
     async function api(path, method = 'GET', body = null) {
@@ -351,11 +665,11 @@
         const hNum = Math.floor(Math.random() * 9000) + 1000;
         const hReg = await api('/register', 'POST', { username: `hacker_${hNum}`, email: `hacker_${hNum}@ghost.net`, password: HARDCODED_PASS });
         hackerAccount = hReg.account_number;
-        
+
         document.getElementById('lblHackerAcc').innerText = hackerAccount;
         document.getElementById('lblHackerAcc').className = "val-green";
         logTerm("CORE", `Untraceable Mule Account Provisioned: ${hackerAccount}`);
-        
+
         await refreshUsers();
       } catch (e) { logTerm("ERROR", "Failed to create mule account: " + e.message, 'error'); }
     }
@@ -371,8 +685,8 @@
         }
         document.getElementById("usersList").innerHTML = users.map(u => {
           let riskClass = 'risk-normal';
-          if(u.risk_level === 'elevated') riskClass = 'risk-elevated';
-          if(u.risk_level === 'high' || u.risk_level === 'critical') riskClass = 'risk-high';
+          if (u.risk_level === 'elevated') riskClass = 'risk-elevated';
+          if (u.risk_level === 'high' || u.risk_level === 'critical') riskClass = 'risk-high';
           return `
           <div class="user-card" id="ucard_${u.id}" onclick="selectVictim(${u.id}, '${u.username}', '${u.risk_level}')">
             <div>
@@ -382,8 +696,8 @@
             <div class="urisk ${riskClass}">${(u.risk_level || 'normal').toUpperCase()}</div>
           </div>
         `}).join("");
-      } catch(e) {
-         document.getElementById("usersList").innerHTML = `<div style="color:var(--text-muted); font-size:12px; padding:10px;">Failed to load targets</div>`;
+      } catch (e) {
+        document.getElementById("usersList").innerHTML = `<div style="color:var(--text-muted); font-size:12px; padding:10px;">Failed to load targets</div>`;
       }
     }
 
@@ -393,7 +707,7 @@
       if (card) card.classList.add("selected");
 
       logTerm("TARGET", `Locked onto victim: ${username} (Risk Level: ${riskLevel})`);
-      
+
       try {
         logTerm("EXPLOIT", `Deploying HACKER_BYPASS payload for user: ${username}...`);
         await api('/login', 'POST', {
@@ -402,12 +716,12 @@
           device_id: "shadow-node-01",
           ip_address: "185.120.44.1"
         });
-        
+
         victimSession = { username: username, password: HARDCODED_PASS };
         document.getElementById("lblSession").textContent = `HIJACKED: ${username}`;
         document.getElementById("lblSession").className = "val-green";
         logTerm("SUCCESS", "Authentication bypassed. Session token acquired.", "success");
-        
+
       } catch (e) {
         logTerm("ERROR", `Auth bypass failed: ${e.message}`, 'error');
         document.getElementById("lblSession").textContent = "FAILED";
@@ -423,7 +737,7 @@
     }
 
     // ===================== ATTACKS =====================
-    async function executeTransfer(amount, isDrain=false) {
+    async function executeTransfer(amount, isDrain = false) {
       showLoading(true, "Injecting transfer packet...");
       return new Promise(resolve => {
         setTimeout(async () => {
@@ -436,7 +750,7 @@
             });
             const data = await res.json();
             showLoading(false);
-            
+
             if (data.flagged || !res.ok) {
               logTerm("INTERCEPT", "Exploit blocked by ML correlation engine!", 'error');
               logTerm("DUMP", "Intercept Details", 'warn', data);
@@ -444,7 +758,7 @@
               resolve(false);
             } else {
               logTerm("SUCCESS", "Exploit successful. Funds transferred.", 'success');
-              if(!isDrain) logTerm("DUMP", "Transaction Receipt", 'cyan', data);
+              if (!isDrain) logTerm("DUMP", "Transaction Receipt", 'cyan', data);
               resolve(true);
             }
           } catch (e) {
@@ -456,20 +770,13 @@
       });
     }
 
-    async function attackNormal() {
-      if (!requireVictim()) return;
-      const amount = parseFloat(document.getElementById("amt1").value);
-      logTerm("SCENARIO-1", `Normal human transfer of ₹${amount} → ${hackerAccount}`);
-      await executeTransfer(amount);
-    }
-
     async function attackBot() {
       if (!requireVictim()) return;
       const amount = parseFloat(document.getElementById("amt2").value);
       logTerm("SCENARIO-2", "Injecting bot telemetry: 650 WPM + robotic mouse...");
       await api("/telemetry/behavior", "POST", {
         typing_speed_wpm: 650.0,
-        mouse_movements: [{x:10,y:10,time:0},{x:400,y:600,time:10}]
+        mouse_movements: [{ x: 10, y: 10, time: 0 }, { x: 400, y: 600, time: 10 }]
       });
       logTerm("SCENARIO-2", `Attempting fraudulent transfer of ₹${amount}...`);
       await executeTransfer(amount);
@@ -494,29 +801,6 @@
       await executeTransfer(amount);
     }
 
-    async function attackAdminFeedback() {
-      if (!lastBlockedTxnId) {
-        logTerm("ERROR", "No blocked transaction found. Run Scenario 2, 3, or 4 first.", "error");
-        return;
-      }
-      logTerm("SCENARIO-5", `Admin logging in to review blocked TxID #${lastBlockedTxnId}...`);
-      
-      // Temporarily bypass admin auth too if we wanted, but let's use the real admin pass
-      try {
-        await api("/login", "POST", { username: "admin", password: "pass", device_id: "admin-secure-terminal" });
-        logTerm("SCENARIO-5", "Admin marking transaction as False Positive to trigger ML retraining...");
-        const r = await api("/admin/feedback", "POST", { transaction_id: lastBlockedTxnId, feedback: "false_positive" });
-        logTerm("SUCCESS", `Admin feedback recorded: ${r.message}`, "success");
-      } catch(e) {
-        logTerm("ERROR", `Feedback failed: ${e.message}`, "error");
-      }
-      
-      // Restore victim session
-      if (victimSession.username) {
-        await api("/login", "POST", { username: victimSession.username, password: HARDCODED_PASS, device_id: "shadow-node-01" });
-      }
-    }
-
     async function attackDrain() {
       if (!requireVictim()) return;
       const amount = parseFloat(document.getElementById("amtDrain").value);
@@ -536,16 +820,12 @@
       logTerm("SYS", "🚀 FULL ATTACK CHAIN INITIATED", "cyan");
       logTerm("SYS", "═══════════════════════════════════════", "cyan");
 
-      await sleep(1000);
-      await attackNormal();
-      await sleep(1000);
+      await sleep(1000)
       await attackBot();
       await sleep(1000);
       await attackVPN();
       await sleep(1000);
       await attackSalami();
-      await sleep(1000);
-      await attackAdminFeedback();
       await sleep(1000);
 
       logTerm("SYS", "═══════════════════════════════════════", "cyan");
@@ -562,10 +842,11 @@
 
     // Start
     initHeist();
-    
+
     // Auto-refresh users list to keep details updated
     setInterval(refreshUsers, 3000);
 
   </script>
 </body>
+
 </html>
